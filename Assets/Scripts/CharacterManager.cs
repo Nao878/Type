@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class CharacterManager : MonoBehaviour
 {
+    // 味方達キャラ達のリスト
     public List<Character> partyMembers;
 
-    void Awake()
+    void Awake()//本来は変数宣言で初期化するが、システム上0に上書きされたためAwakeで初期化する
     {
         if (partyMembers == null || partyMembers.Count == 0)
         {
@@ -18,6 +19,15 @@ public class CharacterManager : MonoBehaviour
                 new Character("炎上系インフルエンサー", 70, 70),
             };
         }
+    }
+
+    public bool IsAllDead()
+    {
+        foreach (var character in partyMembers)
+        {
+            if (character.hp > 0) return false;
+        }
+        return true;
     }
     public Character GetLowestHPCharacter()
     {

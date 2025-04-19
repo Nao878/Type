@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class EnemyAttack : MonoBehaviour
 {
     public CharacterManager characterManager;
+    public TypingManager typingManager;
+
     public float minAttackInterval = 2f;
     public float maxAttackInterval = 5f;
     public int damage = 10;
@@ -25,6 +28,12 @@ public class EnemyAttack : MonoBehaviour
             if (target != null)
             {
                 target.TakeDamage(damage);
+            }
+
+            if (characterManager.IsAllDead())
+            {
+                Debug.Log("Game Over!");
+                yield break;
             }
         }
     }

@@ -21,4 +21,10 @@ public class TypingManager : MonoBehaviour
             inputField.ActivateInputField(); // 再入力可能にする
         }
     }
+
+    public void DisableInput()
+    {
+        inputField.interactable = false; // 入力フィールドを無効化
+        inputField.DeactivateInputField(); // 入力フィールドを非アクティブにする
+    }
 }
