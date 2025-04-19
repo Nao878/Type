@@ -4,14 +4,21 @@ using UnityEngine;
 
 public class CharacterManager : MonoBehaviour
 {
-    public List<Character> partyMembers = new List<Character>
-    {
-        new Character("りんご売りの少女", 100, 100),
-        new Character("ニート", 80, 80),
-        new Character("しょぼん", 90, 90),
-        new Character("炎上系インフルエンサー", 70, 70),
-    };
+    public List<Character> partyMembers;
 
+    void Awake()
+    {
+        if (partyMembers == null || partyMembers.Count == 0)
+        {
+            partyMembers = new List<Character>
+            {
+                new Character("りんご売りの少女", 100, 100),
+                new Character("ニート", 80, 80),
+                new Character("しょぼん", 90, 90),
+                new Character("炎上系インフルエンサー", 70, 70),
+            };
+        }
+    }
     public Character GetLowestHPCharacter()
     {
         Character lowestHPChar = null;
@@ -46,7 +53,6 @@ public class Character
         this.hp = hp;
         this.maxHp = maxHp;
     }
-
     public void Heal(int amount)
     {
         hp = Mathf.Min(hp + amount, maxHp);

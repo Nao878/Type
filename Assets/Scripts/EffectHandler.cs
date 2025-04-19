@@ -14,7 +14,6 @@ public class EffectHandler : MonoBehaviour
             {
                 target.Heal(20);
             }
-            Debug.Log("‰ñ•œ‚µ‚½");
         }
     }
 }
