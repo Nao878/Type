@@ -2,24 +2,13 @@ using System.Collections.Generic;
 using UnityEngine.TextCore.Text;
 using UnityEngine;
 
+// 味方キャラの管理・検索
 public class CharacterManager : MonoBehaviour
 {
     // 味方達キャラ達のリスト
     public List<Character> partyMembers;
 
-    void Awake()//本来は変数宣言で初期化するが、システム上0に上書きされたためAwakeで初期化する
-    {
-        if (partyMembers == null || partyMembers.Count == 0)
-        {
-            partyMembers = new List<Character>
-            {
-                new Character("りんご売りの少女", 100, 100),
-                new Character("ニート", 80, 80),
-                new Character("しょぼん", 90, 90),
-                new Character("炎上系インフルエンサー", 70, 70),
-            };
-        }
-    }
+    public List<HpUIController> hpUIControllers; // HPバーUIリストと一致している必要あり
 
     // 全員がやられている(HPが0)かチェックする
     public bool IsAllDead()
@@ -45,6 +34,16 @@ public class CharacterManager : MonoBehaviour
         return lowestHPChar;
     }
 
+    // HPバーUIを更新する
+    public void UpdateAllHpUI()
+    {
+        for (int i = 0; i < partyMembers.Count; i++)
+        {
+            hpUIControllers[i].UpdateHpBar(partyMembers[i].GetHpRatio());
+        }
+    }
+
+    // 味方が全滅しているかチェック
     public Character GetRandomAlly()
     {
         List<Character> alive = partyMembers.FindAll(c => c.hp > 0);
@@ -53,6 +52,8 @@ public class CharacterManager : MonoBehaviour
     }
 }
 
+
+//味方キャラクターの情報を保持するクラス
 [System.Serializable]// この属性を付けることで、Unityのインスペクタで表示されるようになる
 public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない、newで作成できる、通常インスペクター表示されない、Start/Update使えない、軽量で部品向き
 {
@@ -80,5 +81,11 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
     {
         hp = Mathf.Max(hp - amount, 0);// HPが0未満にならないようにする
         Debug.Log(name + " took " + amount + " damage! Current HP: " + hp);
+    }
+
+    //HPの割合(0.0～1.0)を返す
+    public float GetHpRatio()
+    {
+        return (float)hp / maxHp;
     }
 }

@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
+// ユーザーのタイピングを処理する
 public class TypingManager : MonoBehaviour
 {
-    public TMP_InputField inputField;// TextMeshProの入力フィールド
-    public EffectHandler effectHandler;// 入力に応じた効果を処理するクラス(appleと入力→回復等)
+    public TMP_InputField inputField; // TextMeshProの入力フィールド
+    public EffectHandler effectHandler; // 入力に応じた効果を処理するクラス(appleと入力→回復等)
+    public EnemyAttack enemyAttack; // 攻撃停止のために参照
 
     void Start()
     {
