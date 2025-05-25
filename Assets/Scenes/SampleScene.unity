@@ -599,6 +599,7 @@ GameObject:
   - component: {fileID: 710720896}
   - component: {fileID: 710720898}
   - component: {fileID: 710720897}
+  - component: {fileID: 710720899}
   m_Layer: 5
   m_Name: Gentleman
   m_TagString: Untagged
@@ -663,6 +664,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 710720895}
   m_CullTransparentMesh: 1
+--- !u!114 &710720899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710720895}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330d296fb3129a9429fe633893930479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterImage: {fileID: 710720897}
+  characterTransform: {fileID: 710720896}
 --- !u!1 &736068733
 GameObject:
   m_ObjectHideFlags: 0
@@ -838,6 +853,7 @@ GameObject:
   - component: {fileID: 789556656}
   - component: {fileID: 789556658}
   - component: {fileID: 789556657}
+  - component: {fileID: 789556659}
   m_Layer: 5
   m_Name: GlassMan
   m_TagString: Untagged
@@ -902,6 +918,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 789556655}
   m_CullTransparentMesh: 1
+--- !u!114 &789556659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 789556655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330d296fb3129a9429fe633893930479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterImage: {fileID: 789556657}
+  characterTransform: {fileID: 789556656}
 --- !u!1 &823143058
 GameObject:
   m_ObjectHideFlags: 0
@@ -958,6 +988,7 @@ GameObject:
   - component: {fileID: 830366250}
   - component: {fileID: 830366252}
   - component: {fileID: 830366251}
+  - component: {fileID: 830366253}
   m_Layer: 5
   m_Name: CatGirl
   m_TagString: Untagged
@@ -1022,6 +1053,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 830366249}
   m_CullTransparentMesh: 1
+--- !u!114 &830366253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 830366249}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330d296fb3129a9429fe633893930479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterImage: {fileID: 830366251}
+  characterTransform: {fileID: 830366250}
 --- !u!1 &838279196
 GameObject:
   m_ObjectHideFlags: 0
@@ -1068,6 +1113,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterManager: {fileID: 585496724}
   typingManager: {fileID: 1100627756}
+  hpUIControllers:
+  - {fileID: 830366253}
+  - {fileID: 1337263660}
+  - {fileID: 710720899}
+  - {fileID: 789556659}
   minAttackInterval: 2
   maxAttackInterval: 5
   damage: 10
@@ -2061,6 +2111,7 @@ GameObject:
   - component: {fileID: 1337263657}
   - component: {fileID: 1337263659}
   - component: {fileID: 1337263658}
+  - component: {fileID: 1337263660}
   m_Layer: 5
   m_Name: ManLikeWoman
   m_TagString: Untagged
@@ -2125,6 +2176,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1337263656}
   m_CullTransparentMesh: 1
+--- !u!114 &1337263660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337263656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330d296fb3129a9429fe633893930479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterImage: {fileID: 1337263658}
+  characterTransform: {fileID: 1337263657}
 --- !u!1 &1530691357
 GameObject:
   m_ObjectHideFlags: 0

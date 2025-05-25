@@ -7,7 +7,6 @@ public class CharacterManager : MonoBehaviour
 {
     // 味方達キャラ達のリスト
     public List<Character> partyMembers;
-
     public List<HpUIController> hpUIControllers; // HPバーUIリストと一致している必要あり
 
     // 全員がやられている(HPが0)かチェックする

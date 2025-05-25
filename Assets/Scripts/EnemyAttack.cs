@@ -8,6 +8,7 @@ public class EnemyAttack : MonoBehaviour
 {
     public CharacterManager characterManager;
     public TypingManager typingManager;
+    public List<CharacterVisual> hpUIControllers;
 
     public float minAttackInterval = 2f;
     public float maxAttackInterval = 5f;
@@ -36,6 +37,11 @@ public class EnemyAttack : MonoBehaviour
             {
                 target.TakeDamage(damage);
                 characterManager.UpdateAllHpUI(); // 被ダメージ後にHP更新
+                CharacterVisual visual = hpUIControllers[characterManager.partyMembers.IndexOf(target)].GetComponent<CharacterVisual>();
+                if (visual != null)
+                {
+                    visual.PlayDamageEffect();
+                }
             }
 
             if (characterManager.IsAllDead())
