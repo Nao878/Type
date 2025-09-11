@@ -8,6 +8,16 @@ public class CharacterManager : MonoBehaviour
     // 味方達キャラ達のリスト
     public List<Character> partyMembers;
     public List<HpUIController> hpUIControllers; // HPバーUIリストと一致している必要あり
+    public List<SpUIController> spUIControllers; // SPバーUIリスト（partyMembersと一致）
+
+    void Update()
+    {
+        foreach (var character in partyMembers)
+        {
+            character.UpdateCooldown(Time.deltaTime);
+        }
+        UpdateAllSpUI(); // 毎フレームSPバーUIを更新
+    }
 
     // 全員がやられている(HPが0)かチェックする
     public bool IsAllDead()
@@ -36,9 +46,20 @@ public class CharacterManager : MonoBehaviour
     // HPバーUIを更新する
     public void UpdateAllHpUI()
     {
-        for (int i = 0; i < partyMembers.Count; i++)
+        int count = Mathf.Min(partyMembers.Count, hpUIControllers.Count);
+        for (int i = 0; i < count; i++)
         {
             hpUIControllers[i].UpdateHpBar(partyMembers[i].GetHpRatio());
+        }
+    }
+
+    // SPバーUIを更新する
+    public void UpdateAllSpUI()
+    {
+        int count = Mathf.Min(partyMembers.Count, spUIControllers.Count);
+        for (int i = 0; i < count; i++)
+        {
+            spUIControllers[i].UpdateSpBar(partyMembers[i].GetSpRatio());
         }
     }
 
@@ -59,6 +80,11 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
     public string name;
     public int hp;
     public int maxHp;
+    public int sp;
+    public int maxSp = 100;
+    public bool skillOnCooldown = false;
+    public float cooldownTimer = 0f;
+    public float cooldownDuration = 10f;
 
     // キャラを作る時に使うコンストラクタ
     public Character(string name, int hp, int maxHp)
@@ -66,6 +92,7 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
         this.name = name;
         this.hp = hp;
         this.maxHp = maxHp;
+        this.sp = maxSp;
     }
 
     // キャラのHPを回復するメソッド
@@ -85,6 +112,45 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
     //HPの割合(0.0～1.0)を返す
     public float GetHpRatio()
     {
+        if (maxHp <= 0) return 0f;
         return (float)hp / maxHp;
+    }
+
+    // SPの割合(0.0～1.0)を返す
+    public float GetSpRatio()
+    {
+        if (maxSp <= 0) return 0f;
+        return (float)sp / maxSp;
+    }
+
+    // クールダウン開始
+    public void StartSkillCooldown()
+    {
+        skillOnCooldown = true;
+        cooldownTimer = cooldownDuration;
+        sp = Mathf.Clamp(0, 0, maxSp);
+    }
+
+    // クールダウン進行（毎フレーム呼び出し）
+    public void UpdateCooldown(float deltaTime)
+    {
+        if (skillOnCooldown)
+        {
+            cooldownTimer -= deltaTime;
+            // クールダウン中はSPを徐々に回復
+            float spPerSecond = (float)maxSp / cooldownDuration;
+            sp += Mathf.RoundToInt(spPerSecond * deltaTime);
+            sp = Mathf.Clamp(sp, 0, maxSp);
+
+            if (cooldownTimer <= 0f)
+            {
+                skillOnCooldown = false;
+                sp = maxSp;
+            }
+        }
+        else
+        {
+            sp = maxSp; // クールダウンが終わったらSPは常に最大
+        }
     }
 }

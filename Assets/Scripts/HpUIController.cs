@@ -11,6 +11,6 @@ public class HpUIController : MonoBehaviour
     // HP‚ÌŠ„‡‚ÅXV(0.0`1.0)
     public void UpdateHpBar(float ratio)
     {
-        hpImage.fillAmount = ratio;
+        hpImage.fillAmount = Mathf.Clamp01(ratio);
     }
 }
