@@ -9,6 +9,8 @@ public class CharacterManager : MonoBehaviour
     public List<Character> partyMembers;
     public List<HpUIController> hpUIControllers; // HPバーUIリストと一致している必要あり
     public List<SpUIController> spUIControllers; // SPバーUIリスト（partyMembersと一致）
+    public GameObject gameOverObj; // 全滅時にアクティブにするオブジェクト
+    public List<CharacterVisual> characterVisuals; // 各キャラの見た目制御
 
     void Update()
     {
@@ -16,7 +18,13 @@ public class CharacterManager : MonoBehaviour
         {
             character.UpdateCooldown(Time.deltaTime);
         }
-        UpdateAllSpUI(); // 毎フレームSPバーUIを更新
+        UpdateAllSpUI();
+
+        // 全滅判定
+        if (IsAllDead() && gameOverObj != null)
+        {
+            gameOverObj.SetActive(true);
+        }
     }
 
     // 全員がやられている(HPが0)かチェックする
@@ -50,6 +58,14 @@ public class CharacterManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             hpUIControllers[i].UpdateHpBar(partyMembers[i].GetHpRatio());
+            // HP0なら暗く、そうでなければ元の色
+            if (characterVisuals != null && characterVisuals.Count > i)
+            {
+                if (partyMembers[i].hp == 0)
+                    characterVisuals[i].SetDeadVisual();
+                else
+                    characterVisuals[i].SetAliveVisual();
+            }
         }
     }
 
@@ -85,6 +101,7 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
     public bool skillOnCooldown = false;
     public float cooldownTimer = 0f;
     public float cooldownDuration = 10f;
+    private float spRecoveryTimer = 0f; // SP回復用タイマー
 
     // キャラを作る時に使うコンストラクタ
     public Character(string name, int hp, int maxHp)
@@ -137,20 +154,28 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
         if (skillOnCooldown)
         {
             cooldownTimer -= deltaTime;
-            // クールダウン中はSPを徐々に回復
-            float spPerSecond = (float)maxSp / cooldownDuration;
-            sp += Mathf.RoundToInt(spPerSecond * deltaTime);
-            sp = Mathf.Clamp(sp, 0, maxSp);
+            spRecoveryTimer += deltaTime;
+
+            // 1秒ごとにSPを0.1（maxSp/10）ずつ回復
+            if (spRecoveryTimer >= 1f)
+            {
+                int spIncrease = Mathf.RoundToInt((float)maxSp / 10f);
+                sp += spIncrease;
+                sp = Mathf.Clamp(sp, 0, maxSp);
+                spRecoveryTimer -= 1f;
+            }
 
             if (cooldownTimer <= 0f)
             {
                 skillOnCooldown = false;
                 sp = maxSp;
+                spRecoveryTimer = 0f;
             }
         }
         else
         {
             sp = maxSp; // クールダウンが終わったらSPは常に最大
+            spRecoveryTimer = 0f;
         }
     }
 }

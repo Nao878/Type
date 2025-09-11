@@ -71,4 +71,16 @@ public class CharacterVisual : MonoBehaviour
 
         characterTransform.localPosition = originalPosition;
     }
+
+    public void SetDeadVisual()
+    {
+        if (characterImage != null)
+            characterImage.color = Color.gray; // à√Ç¢êF
+    }
+
+    public void SetAliveVisual()
+    {
+        if (characterImage != null)
+            characterImage.color = originalColor; // å≥ÇÃêF
+    }
 }
