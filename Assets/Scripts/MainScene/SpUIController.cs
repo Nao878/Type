@@ -11,6 +11,6 @@ public class SpUIController : MonoBehaviour
     {
         float clampedRatio = Mathf.Clamp01(ratio);
         spImage.fillAmount = clampedRatio;
-        Debug.Log($"[SpUIController] UpdateSpBar: ratio={ratio}, clamped={clampedRatio}, fillAmount={spImage.fillAmount}");
+        //Debug.Log($"[SpUIController] UpdateSpBar: ratio={ratio}, clamped={clampedRatio}, fillAmount={spImage.fillAmount}");
     }
 }

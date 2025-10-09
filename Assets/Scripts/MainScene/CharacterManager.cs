@@ -5,12 +5,26 @@ using UnityEngine;
 // 味方キャラの管理・検索
 public class CharacterManager : MonoBehaviour
 {
-    // 味方達キャラ達のリスト
+    // ScriptableObjectでキャラクターデータ管理
+    public List<CharacterData> characterDataList; // 新規追加
     public List<Character> partyMembers;
     public List<HpUIController> hpUIControllers; // HPバーUIリストと一致している必要あり
     public List<SpUIController> spUIControllers; // SPバーUIリスト（partyMembersと一致）
     public GameObject gameOverObj; // 全滅時にアクティブにするオブジェクト
     public List<CharacterVisual> characterVisuals; // 各キャラの見た目制御
+
+    void Awake()
+    {
+        // ScriptableObjectからpartyMembersを初期化
+        if (characterDataList != null && characterDataList.Count > 0)
+        {
+            partyMembers = new List<Character>();
+            foreach (var data in characterDataList)
+            {
+                partyMembers.Add(new Character(data.characterName, data.maxHp, data.maxHp) { maxSp = data.maxSp });
+            }
+        }
+    }
 
     void Update()
     {
@@ -116,14 +130,12 @@ public class Character// MonoBehaviourがないので、オブジェクトにアタッチできない
     public void Heal(int amount)
     {
         hp = Mathf.Min(hp + amount, maxHp);// HPがmaxHpを超えないようにする
-        Debug.Log(name + " healed for " + amount + " HP. Current HP: " + hp);
     }
     
     // キャラのHPを減らす(ダメージを受ける)メソッド
     public void TakeDamage(int amount)
     {
         hp = Mathf.Max(hp - amount, 0);// HPが0未満にならないようにする
-        Debug.Log(name + " took " + amount + " damage! Current HP: " + hp);
     }
 
     //HPの割合(0.0～1.0)を返す

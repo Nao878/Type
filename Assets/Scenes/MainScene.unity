@@ -768,6 +768,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6076abd175d37e741b14573aa962c48c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterDataList:
+  - {fileID: 11400000, guid: 0f9962ac0e599b342841017031c82103, type: 2}
+  - {fileID: 11400000, guid: 3766078f644a1934ca455bed6ab2bcee, type: 2}
+  - {fileID: 11400000, guid: c28ac476ffae53f4f9fd7e38d7bdf8a8, type: 2}
+  - {fileID: 11400000, guid: 7adace059a8799e4f9588365be17b839, type: 2}
   partyMembers:
   - name: "\u308A\u3093\u3054\u58F2\u308A\u306E\u5C11\u5973"
     hp: 100
@@ -1422,13 +1427,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterManager: {fileID: 585496724}
-  appleHealAmount: 20
-  poisonDamage: 1
-  poisonInterval: 1
-  poisonDuration: 5
-  stopDelayTime: 2
-  debuffDuration: 3
-  debuffDamageMultiplier: 2
+  skillSettings: {fileID: 11400000, guid: 21e537071a7173c4fb4ca0bd2f601835, type: 2}
 --- !u!1 &830366249
 GameObject:
   m_ObjectHideFlags: 0
