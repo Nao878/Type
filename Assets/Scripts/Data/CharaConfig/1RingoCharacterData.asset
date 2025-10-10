@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d6dd361d1ba8e54084f5dab03aaeb9c, type: 3}
-  m_Name: NitoCharacterData
+  m_Name: 1RingoCharacterData
   m_EditorClassIdentifier: 
-  characterName: "\u30CB\u30FC\u30C8"
-  maxHp: 80
-  maxSp: 80
+  characterName: "\u30EA\u30F3\u30B4\u58F2\u308A\u306E\u5C11\u5973"
+  maxHp: 90
+  maxSp: 90

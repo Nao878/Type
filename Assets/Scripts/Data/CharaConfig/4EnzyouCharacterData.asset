@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d6dd361d1ba8e54084f5dab03aaeb9c, type: 3}
-  m_Name: SyobonCharacterData
+  m_Name: 4EnzyouCharacterData
   m_EditorClassIdentifier: 
-  characterName: "\u3057\u3087\u307C\u3093"
-  maxHp: 90
-  maxSp: 90
+  characterName: "\u708E\u4E0A\u7CFB\u30A4\u30F3\u30D5\u30EB\u30A8\u30F3\u30B5\u30FC"
+  maxHp: 100
+  maxSp: 100
