@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.SceneManagement;
 #endif
 
 /// <summary>
@@ -55,7 +56,23 @@ public class SceneSetup : MonoBehaviour
         // UI構築
         SetupUI(canvas, uiManager, typingController);
 
-        Debug.Log("シーンセットアップ完了！");
+        // シーンをdirtyにマークして保存を促す
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        
+        // シーンを自動保存するか確認
+        if (EditorUtility.DisplayDialog(
+            "シーン保存",
+            "シーンセットアップが完了しました。\nシーンを保存しますか？\n\n※保存しないとWebGLビルドに反映されません。",
+            "保存する",
+            "後で保存"))
+        {
+            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+            Debug.Log("シーンセットアップ完了＆保存しました！");
+        }
+        else
+        {
+            Debug.Log("シーンセットアップ完了！（未保存 - Ctrl+Sで保存してください）");
+        }
     }
 
     static void ClearScene()
