@@ -27,6 +27,7 @@ public class UIManager : MonoBehaviour
     [Header("タイピングUI")]
     public TMP_Text currentInputText;
     public TMP_Text skillActivationText;
+    public TMP_Text suggestText;
 
     [Header("バフ表示")]
     public TMP_Text buffTimerText;
@@ -40,6 +41,9 @@ public class UIManager : MonoBehaviour
     public GameObject dangerTextObj;
     public GameObject warningTextObj;
     public TMP_Text blockedText;
+
+    [Header("コンボ演出")]
+    public TMP_Text comboText;
 
     [Header("ゲーム終了パネル")]
     public GameObject gameOverPanel;
@@ -302,6 +306,22 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public void UpdateSuggestText(List<string> suggestions)
+    {
+        if (suggestText == null) return;
+
+        if (suggestions == null || suggestions.Count == 0)
+        {
+            suggestText.text = "Type a word...";
+            suggestText.color = new Color(0.7f, 0.7f, 0.7f, 0.8f); // 薄いグレー
+        }
+        else
+        {
+            suggestText.text = string.Join(" / ", suggestions);
+            suggestText.color = Color.white;
+        }
+    }
+
     // ========================================
     // タイピングパーティクル演出
     // ========================================
@@ -508,6 +528,60 @@ public class UIManager : MonoBehaviour
         }
 
         blockedText.gameObject.SetActive(false);
+        rect.localScale = Vector3.one;
+    }
+
+    // ========================================
+    // コンボ演出
+    // ========================================
+
+    public void ShowComboText(string text)
+    {
+        if (comboText != null)
+        {
+            StartCoroutine(ComboTextCoroutine(text));
+        }
+    }
+
+    IEnumerator ComboTextCoroutine(string text)
+    {
+        comboText.text = text;
+        comboText.gameObject.SetActive(true);
+
+        RectTransform rect = comboText.GetComponent<RectTransform>();
+        float duration = 1.0f;
+        float elapsed = 0f;
+
+        // 初期スケール
+        rect.localScale = Vector3.one * 0.5f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            if (t <= 0.2f)
+            {
+                // ポップアップ（バウンスアウト）
+                float subT = t / 0.2f;
+                // オーバーシュートする計算を追加（シンプルに1.2倍まで拡大して1に戻る）
+                float scale = Mathf.Lerp(0.5f, 1.2f, Mathf.Sin(subT * Mathf.PI / 2f));
+                if (subT > 0.8f) scale = Mathf.Lerp(1.2f, 1.0f, (subT - 0.8f) / 0.2f);
+                rect.localScale = Vector3.one * scale;
+                comboText.color = new Color(1f, 0.8f, 0f, 1f); // 黄色/オレンジ系
+            }
+            else if (t > 0.7f)
+            {
+                // フェードアウト
+                float subT = (t - 0.7f) / 0.3f;
+                float alpha = Mathf.Lerp(1f, 0f, subT);
+                comboText.color = new Color(1f, 0.8f, 0f, alpha);
+            }
+
+            yield return null;
+        }
+
+        comboText.gameObject.SetActive(false);
         rect.localScale = Vector3.one;
     }
 }

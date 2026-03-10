@@ -9,15 +9,26 @@ using UnityEngine;
 /// </summary>
 public class SkillDatabase : MonoBehaviour
 {
+    [Header("参照")]
     public GameManager gameManager;
-    public Enemy enemy;
     public UIManager uiManager;
+    public Enemy enemy;
+
+    [Header("コンボ履歴")]
+    private string lastSkillExecuted = "";
+    private float lastSkillTime = 0f;
 
     private Dictionary<string, Action> skills;
+    private Dictionary<string, string> skillDescriptions;
 
     void Awake()
     {
         InitializeSkills();
+    }
+
+    void Start()
+    {
+        // Start method added as per instruction, currently empty.
     }
 
     void InitializeSkills()
@@ -46,7 +57,33 @@ public class SkillDatabase : MonoBehaviour
             {"freeze", SkillFreeze},    // 3秒間、敵の攻撃タイマー完全停止
             {"divide", SkillDivide},    // 敵の現在HPの10%分のダメージ
             {"finish", SkillFinish},    // 敵HP10%以下（5以下）なら即座に勝利
-            {"shield", SkillShield}     // 敵の大技準備中（3秒以内）に防御する
+            {"shield", SkillShield},    // 敵の大技準備中（3秒以内）に防御する
+            {"water", SkillWater}       // 基本ダメージ1（コンボ用）
+        };
+
+        skillDescriptions = new Dictionary<string, string>()
+        {
+            {"apple", "回復"},
+            {"stop", "遅延"},
+            {"poison", "毒"},
+            {"buff", "攻撃強化"},
+            {"protect", "無敵"},
+            {"attack", "攻撃"},
+            {"speed", "タイピング緩和"},
+            {"share", "HP平均化"},
+            {"erase", "攻撃リセット"},
+            {"future", "ターゲット表示"},
+            {"change", "ステータス変更"},
+            {"reduce", "攻撃力低下"},
+            {"active", "バフ延長"},
+            {"believe", "確率3倍"},
+            {"ignore", "固定ダメ"},
+            {"supply", "全体1回復"},
+            {"freeze", "停止"},
+            {"divide", "割合ダメ"},
+            {"finish", "即死"},
+            {"shield", "防御"},
+            {"water", "水撃"}
         };
     }
 
@@ -55,13 +92,45 @@ public class SkillDatabase : MonoBehaviour
         return skills.ContainsKey(word.ToLower());
     }
 
-    public void ActivateSkill(string word)
+    public List<string> GetSuggestions(string prefix, int maxCount = 3)
     {
-        string key = word.ToLower();
+        List<string> results = new List<string>();
+        if (string.IsNullOrEmpty(prefix)) return results;
+
+        string searchPrefix = prefix.ToLower();
+        foreach (var kvp in skills)
+        {
+            if (kvp.Key.StartsWith(searchPrefix))
+            {
+                string desc = skillDescriptions.ContainsKey(kvp.Key) ? skillDescriptions[kvp.Key] : "??";
+                results.Add($"{kvp.Key}({desc})");
+                if (results.Count >= maxCount) break;
+            }
+        }
+        return results;
+    }
+
+    public void ActivateSkill(string skillWord)
+    {
+        string key = skillWord.ToLower();
+        if (gameManager == null || gameManager.isGameOver || gameManager.isVictory) return;
+
+        // --- コンボ履歴のチェック ---
+        // 新しいスキルが発動するか、5秒経過すると履歴クリア
+        if (Time.time - lastSkillTime > 5f)
+        {
+            lastSkillExecuted = "";
+        }
+
         if (skills.ContainsKey(key))
         {
             skills[key].Invoke();
             uiManager?.ShowSkillActivation(key);
+            Debug.Log($"スキル発動: {key}");
+
+            // 直前に実行したスキルの履歴を更新
+            lastSkillExecuted = key;
+            lastSkillTime = Time.time;
         }
     }
 
@@ -313,12 +382,24 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillFreeze()
     {
-        // 3秒間、敵の攻撃タイマー完全停止
         if (enemy != null)
         {
-            enemy.ApplyFreeze(3f);
+            float duration = 3f;
+
+            // コンボ判定：直前(5秒以内)のスキルが "water" だった場合シナジー発生
+            if (lastSkillExecuted == "water" && Time.time - lastSkillTime <= 5f)
+            {
+                duration = 6f; // コンボで2倍
+                uiManager?.ShowComboText("COMBO: WATER -> FREEZE!");
+                Debug.Log("コンボ発動！ water -> freeze (凍結時間が6秒に延長)");
+            }
+            else
+            {
+                Debug.Log($"freeze 発動 (凍結時間3秒)");
+            }
+
+            enemy.ApplyFreeze(duration);
             uiManager?.ShowFreezeEffect();
-            Debug.Log("freeze: 敵を3秒間フリーズ");
         }
     }
 
@@ -363,6 +444,24 @@ public class SkillDatabase : MonoBehaviour
         else
         {
             Debug.Log("shield: 大技のタイミングではないため不発");
+        }
+    }
+
+    void SkillWater()
+    {
+        if (enemy != null)
+        {
+            int damage = 1;
+            // 味方のダメージバフがアクティブなら2倍
+            if (gameManager != null && gameManager.isBuffActive)
+            {
+                damage *= 2;
+            }
+            
+            enemy.TakeDamage(damage);
+            uiManager?.UpdateAllUI();
+            uiManager?.ShowDamageEffect(-1); // 全体化エフェクトか無指定
+            Debug.Log($"water 発動! 敵に {damage} ダメージ");
         }
     }
 }

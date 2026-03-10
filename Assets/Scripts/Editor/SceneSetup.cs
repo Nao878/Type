@@ -261,6 +261,14 @@ public class SceneSetup : MonoBehaviour
         uiManager.currentInputText = inputText;
         typingController.currentInputText = inputText;
 
+        // サジェスト表示テキスト
+        GameObject suggestTextObj = CreateText(typingArea.transform, "SuggestText", new Vector2(0, -35), "Type a word...");
+        TMP_Text suggestText = suggestTextObj.GetComponent<TMP_Text>();
+        suggestText.fontSize = 20;
+        suggestText.color = new Color(0.7f, 0.7f, 0.7f, 0.8f); // 薄いグレー初期色
+        suggestText.alignment = TextAlignmentOptions.Center;
+        uiManager.suggestText = suggestText;
+
         // スキル発動表示
         GameObject skillTextObj = CreateText(typingArea.transform, "SkillActivationText", new Vector2(0, 50), "");
         TMP_Text skillText = skillTextObj.GetComponent<TMP_Text>();
@@ -346,6 +354,15 @@ public class SceneSetup : MonoBehaviour
         blockedTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
         blockedTextObj.SetActive(false);
         uiManager.blockedText = blockedTmp;
+
+        // === コンボ表示テキスト ===
+        GameObject comboTextObj = CreateText(canvas.transform, "ComboText", new Vector2(0, 50), "COMBO!");
+        TMP_Text comboTmp = comboTextObj.GetComponent<TMP_Text>();
+        comboTmp.fontSize = 64;
+        comboTmp.color = new Color(1f, 0.8f, 0f); // 黄・オレンジ系
+        comboTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
+        comboTextObj.SetActive(false);
+        uiManager.comboText = comboTmp;
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)

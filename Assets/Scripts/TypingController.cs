@@ -61,7 +61,7 @@ public class TypingController : MonoBehaviour
         }
 
         // UI更新
-        UpdateInputDisplay();
+        UpdateInputUI();
     }
 
     void CheckWordCompletion()
@@ -72,8 +72,8 @@ public class TypingController : MonoBehaviour
         if (skillDatabase.HasSkill(currentInput))
         {
             skillDatabase.ActivateSkill(currentInput);
-            currentInput = "";
-            UpdateInputDisplay();
+            Debug.Log($"Input: {currentInput}");
+            ClearInput(); // Clear input and update UI
         }
     }
 
@@ -86,15 +86,21 @@ public class TypingController : MonoBehaviour
             skillDatabase.ActivateSkill(currentInput);
         }
 
-        currentInput = "";
-        UpdateInputDisplay();
+        ClearInput(); // Clear input and update UI
     }
 
-    void UpdateInputDisplay()
+    void UpdateInputUI() // Renamed from UpdateInputDisplay
     {
-        if (currentInputText != null)
+        if (uiManager != null && uiManager.currentInputText != null)
         {
-            currentInputText.text = currentInput;
+            uiManager.currentInputText.text = currentInput;
+        }
+
+        // サジェストの更新
+        if (skillDatabase != null && uiManager != null)
+        {
+            var suggestions = skillDatabase.GetSuggestions(currentInput);
+            uiManager.UpdateSuggestText(suggestions);
         }
     }
 
@@ -111,7 +117,7 @@ public class TypingController : MonoBehaviour
     public void ClearInput()
     {
         currentInput = "";
-        UpdateInputDisplay();
+        UpdateInputUI();
     }
 
     /// <summary>
