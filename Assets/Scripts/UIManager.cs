@@ -32,6 +32,10 @@ public class UIManager : MonoBehaviour
     public TMP_Text buffTimerText;
     public TMP_Text speedBuffTimerText;
 
+    [Header("エフェクト")]
+    public Transform typingParticleContainer;
+    public TMP_Text criticalText;
+
     [Header("ゲーム終了パネル")]
     public GameObject gameOverPanel;
     public GameObject victoryPanel;
@@ -279,5 +283,157 @@ public class UIManager : MonoBehaviour
         {
             victoryPanel.SetActive(true);
         }
+    }
+
+    // ========================================
+    // タイピングパーティクル演出
+    // ========================================
+
+    /// <summary>
+    /// 入力された文字を上方にフロート＆フェードアウトさせるパーティクル演出
+    /// </summary>
+    public void SpawnTypingParticle(char c)
+    {
+        if (typingParticleContainer == null) return;
+
+        // テキストオブジェクトを動的に生成
+        GameObject particleObj = new GameObject("TypingParticle");
+        particleObj.transform.SetParent(typingParticleContainer);
+
+        RectTransform rect = particleObj.AddComponent<RectTransform>();
+        // 入力欄付近のランダムなX位置から出現
+        float randomX = Random.Range(-100f, 100f);
+        rect.anchoredPosition = new Vector2(randomX, 0f);
+        rect.sizeDelta = new Vector2(50, 50);
+        // ランダムな回転で遊び心を追加
+        rect.localRotation = Quaternion.Euler(0, 0, Random.Range(-25f, 25f));
+        rect.localScale = Vector3.one * Random.Range(0.8f, 1.4f);
+
+        TextMeshProUGUI tmp = particleObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = c.ToString().ToUpper();
+        tmp.fontSize = Random.Range(28, 48);
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = new Color(
+            Random.Range(0.6f, 1f),
+            Random.Range(0.8f, 1f),
+            Random.Range(0.3f, 1f),
+            1f
+        );
+        tmp.raycastTarget = false;
+
+        StartCoroutine(AnimateTypingParticle(particleObj, rect, tmp));
+    }
+
+    IEnumerator AnimateTypingParticle(GameObject obj, RectTransform rect, TMP_Text tmp)
+    {
+        float duration = 0.8f;
+        float elapsed = 0f;
+        Vector2 startPos = rect.anchoredPosition;
+        // やや左右にブレつつ上に飛ぶ
+        float driftX = Random.Range(-30f, 30f);
+        Color startColor = tmp.color;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // イーズアウトで上方に移動
+            float easedT = 1f - (1f - t) * (1f - t);
+            rect.anchoredPosition = startPos + new Vector2(driftX * t, 120f * easedT);
+
+            // フェードアウト（後半で加速）
+            float alpha = Mathf.Lerp(1f, 0f, t * t);
+            tmp.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+
+            // 微妙にスケールダウン
+            rect.localScale = Vector3.one * Mathf.Lerp(rect.localScale.x, 0.3f, t);
+
+            yield return null;
+        }
+
+        Destroy(obj);
+    }
+
+    // ========================================
+    // クリティカル演出（believe スキル用）
+    // ========================================
+
+    /// <summary>
+    /// CRITICAL!! を画面中央にど派手に表示し、キャンバスをシェイクさせる
+    /// </summary>
+    public void ShowCriticalEffect()
+    {
+        StartCoroutine(CriticalEffectCoroutine());
+    }
+
+    IEnumerator CriticalEffectCoroutine()
+    {
+        // === カメラ/キャンバス シェイク（0.2秒） ===
+        RectTransform canvasRect = typingParticleContainer?.root?.GetComponent<RectTransform>();
+        StartCoroutine(ShakeCanvas(canvasRect, 0.2f, 15f));
+
+        // === CRITICAL!! テキスト表示（0.5秒） ===
+        if (criticalText != null)
+        {
+            criticalText.text = "CRITICAL!!";
+            criticalText.gameObject.SetActive(true);
+
+            // スケールバウンスアニメーション（ド派手に）
+            RectTransform critRect = criticalText.GetComponent<RectTransform>();
+            float duration = 0.5f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+
+                // 最初の0.15秒で巨大にズームイン、その後少し縮む
+                float scale;
+                if (t < 0.3f)
+                {
+                    // 0→1.5 に急拡大
+                    scale = Mathf.Lerp(0f, 1.5f, t / 0.3f);
+                }
+                else
+                {
+                    // 1.5→1.0 に戻る
+                    scale = Mathf.Lerp(1.5f, 1.0f, (t - 0.3f) / 0.7f);
+                }
+                critRect.localScale = Vector3.one * scale;
+
+                // 後半でフェードアウト
+                float alpha = t < 0.6f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.6f) / 0.4f);
+                criticalText.color = new Color(1f, 0.1f, 0.1f, alpha);
+
+                yield return null;
+            }
+
+            criticalText.gameObject.SetActive(false);
+            critRect.localScale = Vector3.one;
+        }
+    }
+
+    IEnumerator ShakeCanvas(RectTransform canvasRect, float duration, float magnitude)
+    {
+        if (canvasRect == null) yield break;
+
+        Vector2 originalPos = canvasRect.anchoredPosition;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            // 徐々に減衰するシェイク
+            float currentMag = magnitude * (1f - t);
+            float offsetX = Random.Range(-currentMag, currentMag);
+            float offsetY = Random.Range(-currentMag, currentMag);
+            canvasRect.anchoredPosition = originalPos + new Vector2(offsetX, offsetY);
+            yield return null;
+        }
+
+        canvasRect.anchoredPosition = originalPos;
     }
 }

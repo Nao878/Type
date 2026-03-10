@@ -13,6 +13,7 @@ public class TypingController : MonoBehaviour
 
     [Header("参照")]
     public SkillDatabase skillDatabase;
+    public UIManager uiManager;
 
     private string currentInput = "";
     private bool inputEnabled = true;
@@ -48,7 +49,13 @@ public class TypingController : MonoBehaviour
         else if (char.IsLetter(c))
         {
             currentInput += char.ToLower(c);
-            
+
+            // タイピングパーティクル演出
+            if (uiManager != null)
+            {
+                uiManager.SpawnTypingParticle(c);
+            }
+
             // リアルタイムでスキル発動チェック（Enterなしで発動）
             CheckWordCompletion();
         }

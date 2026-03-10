@@ -265,7 +265,20 @@ public class SkillDatabase : MonoBehaviour
             int damage = gameManager.CalculateDamage(baseDamage, true);
             enemy.TakeDamage(damage);
             uiManager?.UpdateEnemyHP();
-            Debug.Log($"believe: 敵に{damage}ダメージ（30%で3倍）");
+
+            // クリティカル判定（believe の3倍が発動したか）
+            // buffなしの基本ダメージと比較して3倍以上ならクリティカル
+            int normalDamage = gameManager.CalculateDamage(baseDamage, false);
+            bool isCritical = damage >= normalDamage * 3;
+            if (isCritical)
+            {
+                uiManager?.ShowCriticalEffect();
+                Debug.Log($"believe: ★CRITICAL★ 敵に{damage}ダメージ！");
+            }
+            else
+            {
+                Debug.Log($"believe: 敵に{damage}ダメージ（30%で3倍）");
+            }
         }
     }
 

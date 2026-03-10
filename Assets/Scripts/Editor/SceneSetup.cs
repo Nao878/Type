@@ -40,6 +40,7 @@ public class SceneSetup : MonoBehaviour
         skillDatabase.enemy = enemy;
         typingController.skillDatabase = skillDatabase;
         gameManager.skillDatabase = skillDatabase;
+        typingController.uiManager = null; // uiManagerは後で設定
 
         // Canvas作成
         Canvas canvas = CreateCanvas();
@@ -52,6 +53,7 @@ public class SceneSetup : MonoBehaviour
         uiManager.enemy = enemy;
         gameManager.uiManager = uiManager;
         skillDatabase.uiManager = uiManager;
+        typingController.uiManager = uiManager;
 
         // UI構築
         SetupUI(canvas, uiManager, typingController);
@@ -267,6 +269,14 @@ public class SceneSetup : MonoBehaviour
         skillText.alignment = TextAlignmentOptions.Center;
         uiManager.skillActivationText = skillText;
 
+        // タイピングパーティクルコンテナ（文字飛散演出用）
+        GameObject particleContainer = new GameObject("TypingParticleContainer");
+        particleContainer.transform.SetParent(typingArea.transform);
+        RectTransform particleRect = particleContainer.AddComponent<RectTransform>();
+        particleRect.anchoredPosition = new Vector2(0, 30);
+        particleRect.sizeDelta = new Vector2(500, 200);
+        uiManager.typingParticleContainer = particleContainer.transform;
+
         // === バフ表示エリア（右上）===
         GameObject buffTextObj = CreateText(canvas.transform, "BuffTimerText", new Vector2(800, 450), "");
         TMP_Text buffText = buffTextObj.GetComponent<TMP_Text>();
@@ -296,6 +306,19 @@ public class SceneSetup : MonoBehaviour
         victoryText.GetComponent<TMP_Text>().fontSize = 72;
         victoryText.GetComponent<TMP_Text>().color = Color.green;
         uiManager.victoryPanel = victoryPanel;
+
+        // === CRITICAL!!テキスト（believeスキルクリティカル演出用） ===
+        GameObject criticalTextObj = CreateText(canvas.transform, "CriticalText", Vector2.zero, "");
+        TMP_Text critText = criticalTextObj.GetComponent<TMP_Text>();
+        critText.fontSize = 120;
+        critText.color = new Color(1f, 0.1f, 0.1f, 1f);
+        critText.alignment = TextAlignmentOptions.Center;
+        critText.fontStyle = FontStyles.Bold;
+        critText.enableWordWrapping = false;
+        RectTransform critTextRect = criticalTextObj.GetComponent<RectTransform>();
+        critTextRect.sizeDelta = new Vector2(800, 200);
+        criticalTextObj.SetActive(false);
+        uiManager.criticalText = critText;
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)
