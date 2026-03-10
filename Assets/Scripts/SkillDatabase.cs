@@ -45,7 +45,8 @@ public class SkillDatabase : MonoBehaviour
             {"supply", SkillSupply},    // 味方全員のHPを1回復
             {"freeze", SkillFreeze},    // 3秒間、敵の攻撃タイマー完全停止
             {"divide", SkillDivide},    // 敵の現在HPの10%分のダメージ
-            {"finish", SkillFinish}     // 敵HP10%以下（5以下）なら即座に勝利
+            {"finish", SkillFinish},    // 敵HP10%以下（5以下）なら即座に勝利
+            {"shield", SkillShield}     // 敵の大技準備中（3秒以内）に防御する
         };
     }
 
@@ -346,6 +347,22 @@ public class SkillDatabase : MonoBehaviour
         else
         {
             Debug.Log("finish: 敵HPが10%より高いため発動失敗");
+        }
+    }
+
+    void SkillShield()
+    {
+        // 敵の大技準備中（attackTimer <= 3f）に発動で防御成功
+        if (enemy != null && enemy.isBigMoveQueued && enemy.attackTimer <= 3f && !enemy.isShieldActive)
+        {
+            enemy.isShieldActive = true;
+            uiManager?.ShowWarningText(false);
+            uiManager?.ShowBlockedEffect();
+            Debug.Log("shield: 敵の大技ブロック準備完了！");
+        }
+        else
+        {
+            Debug.Log("shield: 大技のタイミングではないため不発");
         }
     }
 }

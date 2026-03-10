@@ -40,6 +40,15 @@ public class Enemy : MonoBehaviour
     public float attackTimer = 0f;
     public int nextTargetIndex = -1;
 
+    [Header("発狂モード")]
+    public bool isEnraged = false;
+    private bool enrageTriggered = false;
+
+    [Header("大技システム")]
+    public bool isBigMoveQueued = false;
+    public bool isShieldActive = false;
+    private bool warningShown = false;
+
     [Header("参照")]
     public GameManager gameManager;
 
@@ -60,17 +69,46 @@ public class Enemy : MonoBehaviour
         currentHP = hp;
         baseDamage = damage;
         baseAttackInterval = interval;
+        GetNextAttackType();
         attackTimer = GetRandomAttackInterval();
+        isEnraged = false;
+        enrageTriggered = false;
         isInitialized = true;
+    }
+
+    void GetNextAttackType()
+    {
+        isBigMoveQueued = Random.value < 0.2f; // 20%の確率で大技
+        warningShown = false;
+        isShieldActive = false;
+        gameManager?.uiManager?.ShowWarningText(false);
     }
 
     void Update()
     {
         if (gameManager == null) gameManager = GameManager.Instance;
-        if (gameManager == null || gameManager.isGameOver || gameManager.isVictory) return;
+        if (gameManager == null || gameManager.isGameOver || gameManager.isVictory)
+        {
+            gameManager?.uiManager?.ShowDangerText(false);
+            gameManager?.uiManager?.ShowWarningText(false);
+            return;
+        }
 
+        CheckEnrageMode();
         UpdateStatusEffects();
         UpdateAttackTimer();
+    }
+
+    void CheckEnrageMode()
+    {
+        if (!enrageTriggered && currentHP <= maxHP / 2)
+        {
+            enrageTriggered = true;
+            isEnraged = true;
+            baseAttackInterval /= 2f; // 攻撃間隔を半分に
+            attackTimer /= 2f; // 現在のタイマーも半分に
+            Debug.Log("Enemy: 発狂モード突入！攻撃間隔が半分になった！");
+        }
     }
 
     void UpdateStatusEffects()
@@ -128,10 +166,31 @@ public class Enemy : MonoBehaviour
         float timerSpeed = isSlowed ? slowMultiplier : 1f;
         attackTimer -= Time.deltaTime * timerSpeed;
 
+        // 大技の警告表示 (attackTimer <= 3.0f)
+        if (isBigMoveQueued && attackTimer <= 3f && !warningShown)
+        {
+            warningShown = true;
+            gameManager?.uiManager?.ShowWarningText(true);
+        }
+
+        // 発狂モード中のDANGER表示 (attackTimer <= 2.0f かつ 大技ではない時)
+        if (isEnraged && !isBigMoveQueued)
+        {
+            if (attackTimer <= 2f)
+            {
+                gameManager?.uiManager?.ShowDangerText(true);
+            }
+            else
+            {
+                gameManager?.uiManager?.ShowDangerText(false);
+            }
+        }
+
         if (attackTimer <= 0f)
         {
             PerformAttack();
             attackTimer = GetRandomAttackInterval();
+            GetNextAttackType();
             DetermineNextTarget();
         }
     }
@@ -140,11 +199,32 @@ public class Enemy : MonoBehaviour
     {
         if (gameManager == null) return;
 
+        // エフェクトを隠す
+        gameManager.uiManager?.ShowWarningText(false);
+        gameManager.uiManager?.ShowDangerText(false);
+
         PartyMember target = gameManager.GetRandomAliveMember();
         if (target == null) return;
 
-        // ダメージ計算（攻撃力減少適用）
         int damage = baseDamage;
+
+        // 大技の処理
+        if (isBigMoveQueued)
+        {
+            if (isShieldActive)
+            {
+                damage = 1; // 防御成功
+                Debug.Log("Enemy: プレイヤーがシールドで大技を防御！");
+                isShieldActive = false;
+            }
+            else
+            {
+                damage *= 3; // 防御失敗、3倍ダメージ
+                Debug.Log("Enemy: 大技直撃！3倍ダメージ！");
+            }
+        }
+
+        // 攻撃力減少適用
         if (isAttackReduced)
         {
             damage = Mathf.RoundToInt(damage * (1f - attackReductionPercent));
@@ -224,6 +304,7 @@ public class Enemy : MonoBehaviour
     public void ResetAttackTimer()
     {
         attackTimer = GetRandomAttackInterval();
+        GetNextAttackType();
     }
 
     /// <summary>

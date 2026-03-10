@@ -319,6 +319,33 @@ public class SceneSetup : MonoBehaviour
         critTextRect.sizeDelta = new Vector2(800, 200);
         criticalTextObj.SetActive(false);
         uiManager.criticalText = critText;
+
+        // === 大技・発狂演出テキスト ===
+        GameObject dangerTextObj = CreateText(enemyArea.transform, "DangerText", new Vector2(0, 50), "DANGER");
+        TMP_Text dangerTmp = dangerTextObj.GetComponent<TMP_Text>();
+        dangerTmp.fontSize = 48;
+        dangerTmp.color = Color.red;
+        dangerTmp.fontStyle = FontStyles.Bold;
+        dangerTextObj.SetActive(false);
+        uiManager.dangerTextObj = dangerTextObj;
+
+        GameObject warningTextObj = CreateText(canvas.transform, "WarningText", new Vector2(0, 150), "WARNING! Type 'shield' to block!");
+        TMP_Text warningTmp = warningTextObj.GetComponent<TMP_Text>();
+        warningTmp.fontSize = 56;
+        warningTmp.color = new Color(1f, 0.5f, 0f); // オレンジ
+        warningTmp.fontStyle = FontStyles.Bold;
+        warningTmp.enableWordWrapping = false;
+        warningTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(800, 100);
+        warningTextObj.SetActive(false);
+        uiManager.warningTextObj = warningTextObj;
+
+        GameObject blockedTextObj = CreateText(canvas.transform, "BlockedText", new Vector2(0, 50), "BLOCKED!");
+        TMP_Text blockedTmp = blockedTextObj.GetComponent<TMP_Text>();
+        blockedTmp.fontSize = 72;
+        blockedTmp.color = Color.cyan;
+        blockedTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
+        blockedTextObj.SetActive(false);
+        uiManager.blockedText = blockedTmp;
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)

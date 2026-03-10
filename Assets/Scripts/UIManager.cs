@@ -36,6 +36,11 @@ public class UIManager : MonoBehaviour
     public Transform typingParticleContainer;
     public TMP_Text criticalText;
 
+    [Header("大技・発狂演出")]
+    public GameObject dangerTextObj;
+    public GameObject warningTextObj;
+    public TMP_Text blockedText;
+
     [Header("ゲーム終了パネル")]
     public GameObject gameOverPanel;
     public GameObject victoryPanel;
@@ -73,6 +78,18 @@ public class UIManager : MonoBehaviour
         // 状態異常アイコンの更新
         UpdateStatusEffectIcons();
         UpdateBuffTimerDisplay();
+
+        // DANGERテキストの点滅処理
+        if (dangerTextObj != null && dangerTextObj.activeSelf)
+        {
+            TMP_Text tmp = dangerTextObj.GetComponent<TMP_Text>();
+            if (tmp != null)
+            {
+                Color c = tmp.color;
+                c.a = Mathf.PingPong(Time.time * 5f, 1f); // 激しく点滅
+                tmp.color = c;
+            }
+        }
     }
 
     public void UpdateAllUI()
@@ -435,5 +452,62 @@ public class UIManager : MonoBehaviour
         }
 
         canvasRect.anchoredPosition = originalPos;
+    }
+
+    // ========================================
+    // 大技・発狂演出
+    // ========================================
+
+    public void ShowDangerText(bool show)
+    {
+        if (dangerTextObj != null)
+        {
+            dangerTextObj.SetActive(show);
+        }
+    }
+
+    public void ShowWarningText(bool show)
+    {
+        if (warningTextObj != null)
+        {
+            warningTextObj.SetActive(show);
+        }
+    }
+
+    public void ShowBlockedEffect()
+    {
+        if (blockedText != null)
+        {
+            StartCoroutine(BlockedEffectCoroutine());
+        }
+    }
+
+    IEnumerator BlockedEffectCoroutine()
+    {
+        blockedText.text = "BLOCKED!";
+        blockedText.gameObject.SetActive(true);
+
+        RectTransform rect = blockedText.GetComponent<RectTransform>();
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // バウンドスケール
+            float scale = Mathf.Lerp(0.5f, 1.2f, Mathf.Sin(t * Mathf.PI));
+            rect.localScale = Vector3.one * scale;
+
+            // 後半でフェードアウト
+            float alpha = t < 0.6f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.6f) / 0.4f);
+            blockedText.color = new Color(0f, 1f, 1f, alpha); // シアン色
+
+            yield return null;
+        }
+
+        blockedText.gameObject.SetActive(false);
+        rect.localScale = Vector3.one;
     }
 }
