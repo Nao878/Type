@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     [Header("ゲーム状態")]
     public bool isGameOver = false;
     public bool isVictory = false;
+    public bool isPaused = false;
 
     // バフ状態管理
     public bool isBuffActive = false;
@@ -158,6 +159,25 @@ public class GameManager : MonoBehaviour
         isGameOver = true;
         uiManager?.ShowGameOver();
         typingController?.DisableInput();
+    }
+
+    public void TogglePause()
+    {
+        if (isGameOver || isVictory) return;
+
+        isPaused = !isPaused;
+        Time.timeScale = isPaused ? 0f : 1f;
+
+        if (isPaused)
+        {
+            typingController?.DisableInput();
+        }
+        else
+        {
+            typingController?.EnableInput();
+        }
+
+        uiManager?.ToggleSkillDictionaryPanel(isPaused);
     }
 
     /// <summary>

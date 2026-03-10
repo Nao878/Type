@@ -110,6 +110,17 @@ public class SkillDatabase : MonoBehaviour
         return results;
     }
 
+    public Dictionary<string, string> GetAllSkillDescriptions()
+    {
+        Dictionary<string, string> allSkills = new Dictionary<string, string>();
+        foreach (var kvp in skills)
+        {
+            string desc = skillDescriptions.ContainsKey(kvp.Key) ? skillDescriptions[kvp.Key] : "??";
+            allSkills.Add(kvp.Key, desc);
+        }
+        return allSkills;
+    }
+
     public void ActivateSkill(string skillWord)
     {
         string key = skillWord.ToLower();

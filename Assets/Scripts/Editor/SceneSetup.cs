@@ -4,6 +4,7 @@ using TMPro;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine.Events;
 #endif
 
 /// <summary>
@@ -56,7 +57,7 @@ public class SceneSetup : MonoBehaviour
         typingController.uiManager = uiManager;
 
         // UI構築
-        SetupUI(canvas, uiManager, typingController);
+        SetupUI(canvas, uiManager, typingController, gameManager);
 
         // シーンをdirtyにマークして保存を促す
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -126,7 +127,7 @@ public class SceneSetup : MonoBehaviour
         return canvas;
     }
 
-    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController)
+    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager)
     {
         // 背景
         GameObject background = CreateImage(canvas.transform, "Background", new Vector2(0, 0), new Vector2(1920, 1080));
@@ -363,6 +364,40 @@ public class SceneSetup : MonoBehaviour
         comboTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
         comboTextObj.SetActive(false);
         uiManager.comboText = comboTmp;
+
+        // === Pause / Spellbook ボタン ===
+        GameObject pauseBtnObj = CreateButton(canvas.transform, "PauseButton", new Vector2(850, 480), new Vector2(120, 50), "Spellbook");
+        Button pauseBtn = pauseBtnObj.GetComponent<Button>();
+        uiManager.pauseButton = pauseBtn;
+
+        // === Skill Dictionary Panel ===
+        GameObject dictPanel = CreateImage(canvas.transform, "SkillDictionaryPanel", Vector2.zero, new Vector2(1920, 1080));
+        dictPanel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.95f); // ほぼ真っ黒の半透明背景
+        
+        // タイトル
+        GameObject dictTitle = CreateText(dictPanel.transform, "DictTitle", new Vector2(0, 450), "--- Spellbook ---");
+        dictTitle.GetComponent<TMP_Text>().fontSize = 64;
+        dictTitle.GetComponent<TMP_Text>().color = new Color(0.8f, 0.8f, 1f);
+
+        // スキルリストテキスト
+        GameObject dictContent = CreateText(dictPanel.transform, "DictContent", new Vector2(0, 0), "");
+        TMP_Text dictContentText = dictContent.GetComponent<TMP_Text>();
+        dictContentText.fontSize = 28;
+        dictContentText.alignment = TextAlignmentOptions.Center;
+        dictContentText.lineSpacing = 15;
+        // RectTransformを大きくして複数行入るように
+        RectTransform dictContentRect = dictContent.GetComponent<RectTransform>();
+        dictContentRect.sizeDelta = new Vector2(800, 800);
+        uiManager.skillDictionaryText = dictContentText;
+
+        // Resume ボタン
+        GameObject resumeBtnObj = CreateButton(dictPanel.transform, "ResumeButton", new Vector2(0, -450), new Vector2(250, 60), "Resume");
+        Button resumeBtn = resumeBtnObj.GetComponent<Button>();
+        uiManager.resumeButton = resumeBtn;
+
+        // パネルをUIManagerに割り当てて非表示にする
+        uiManager.skillDictionaryPanel = dictPanel;
+        dictPanel.SetActive(false);
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)
@@ -394,6 +429,26 @@ public class SceneSetup : MonoBehaviour
         tmp.fontSize = 24;
         tmp.color = Color.white;
         tmp.alignment = TextAlignmentOptions.Center;
+
+        return obj;
+    }
+
+    static GameObject CreateButton(Transform parent, string name, Vector2 position, Vector2 size, string text)
+    {
+        // 1. Buttonオブジェクト作成（背景画像付き）
+        GameObject obj = CreateImage(parent, name, position, size);
+        Image img = obj.GetComponent<Image>();
+        img.color = new Color(0.2f, 0.2f, 0.2f); // グレーのボタン背景
+
+        // 2. Buttonコンポーネント追加
+        Button btn = obj.AddComponent<Button>();
+        btn.targetGraphic = img;
+
+        // 3. テキスト子オブジェクト作成
+        GameObject textObj = CreateText(obj.transform, "Text", Vector2.zero, text);
+        TMP_Text tmp = textObj.GetComponent<TMP_Text>();
+        tmp.fontSize = 24;
+        tmp.color = Color.white;
 
         return obj;
     }

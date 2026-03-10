@@ -49,6 +49,12 @@ public class UIManager : MonoBehaviour
     public GameObject gameOverPanel;
     public GameObject victoryPanel;
 
+    [Header("ポーズ・スキル辞書UI")]
+    public GameObject skillDictionaryPanel;
+    public TMP_Text skillDictionaryText;
+    public UnityEngine.UI.Button pauseButton;
+    public UnityEngine.UI.Button resumeButton;
+
     [Header("参照")]
     public GameManager gameManager;
     public Enemy enemy;
@@ -60,6 +66,7 @@ public class UIManager : MonoBehaviour
         // 初期状態でパネル非表示
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (victoryPanel != null) victoryPanel.SetActive(false);
+        if (skillDictionaryPanel != null) skillDictionaryPanel.SetActive(false);
         if (poisonEffectIcon != null) poisonEffectIcon.SetActive(false);
         if (freezeEffectIcon != null) freezeEffectIcon.SetActive(false);
         if (slowEffectIcon != null) slowEffectIcon.SetActive(false);
@@ -74,7 +81,33 @@ public class UIManager : MonoBehaviour
             if (highlight != null) highlight.gameObject.SetActive(false);
         }
 
+        if (pauseButton != null && gameManager != null)
+        {
+            pauseButton.onClick.AddListener(() => gameManager.TogglePause());
+        }
+
+        if (resumeButton != null && gameManager != null)
+        {
+            resumeButton.onClick.AddListener(() => gameManager.TogglePause());
+        }
+
+        InitializeSkillDictionaryText();
         UpdateAllUI();
+    }
+
+    void InitializeSkillDictionaryText()
+    {
+        if (skillDictionaryText == null || gameManager == null || gameManager.skillDatabase == null) return;
+
+        var allSkills = gameManager.skillDatabase.GetAllSkillDescriptions();
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        foreach (var kvp in allSkills)
+        {
+            sb.AppendLine($"<color=#FFFF00>{kvp.Key}</color> : {kvp.Value}");
+        }
+
+        skillDictionaryText.text = sb.ToString();
     }
 
     void Update()
@@ -303,6 +336,18 @@ public class UIManager : MonoBehaviour
         if (victoryPanel != null)
         {
             victoryPanel.SetActive(true);
+        }
+    }
+
+    // ========================================
+    // ポーズ・スキル辞書UI
+    // ========================================
+
+    public void ToggleSkillDictionaryPanel(bool show)
+    {
+        if (skillDictionaryPanel != null)
+        {
+            skillDictionaryPanel.SetActive(show);
         }
     }
 
