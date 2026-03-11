@@ -128,12 +128,31 @@ public class UIManager : MonoBehaviour
     {
         if (skillDictionaryText == null || gameManager == null || gameManager.skillDatabase == null) return;
 
-        var allSkills = gameManager.skillDatabase.GetAllSkillDescriptions();
+        var charSkills = gameManager.skillDatabase.characterSkills;
+        var allDesc = gameManager.skillDatabase.GetAllSkillDescriptions();
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-        foreach (var kvp in allSkills)
+        if (charSkills != null)
         {
-            sb.AppendLine($"<color=#FFFF00>{kvp.Key}</color> : {kvp.Value}");
+            foreach (var kvp in charSkills)
+            {
+                string charName = kvp.Key;
+                sb.AppendLine($"<color=#00FFFF>【{charName}】</color>");
+                
+                foreach (string skill in kvp.Value)
+                {
+                    string desc = allDesc.ContainsKey(skill) ? allDesc[skill] : "固有スキル";
+                    sb.AppendLine($"・<color=#FFFF00>{skill}</color> : {desc}");
+                }
+                sb.AppendLine();
+            }
+        }
+        else
+        {
+            foreach (var kvp in allDesc)
+            {
+                sb.AppendLine($"<color=#FFFF00>{kvp.Key}</color> : {kvp.Value}");
+            }
         }
 
         skillDictionaryText.text = sb.ToString();

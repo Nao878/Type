@@ -5,12 +5,24 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public enum GameState
+{
+    Title,
+    Story,
+    Battle,
+    Result
+}
+
 /// <summary>
 /// ゲーム全体を管理するメインコントローラー
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
+
+    [Header("ゲーム状態")]
+    public GameState currentState = GameState.Battle; // 初期設定として定義
+
 
     [Header("キャラクター設定")]
     public List<PartyMember> partyMembers = new List<PartyMember>();
@@ -21,10 +33,13 @@ public class GameManager : MonoBehaviour
     public TypingController typingController;
     public SkillDatabase skillDatabase;
 
-    [Header("ゲーム状態")]
+    [Header("フラグ管理")]
     public bool isGameOver = false;
     public bool isVictory = false;
     public bool isPaused = false;
+    
+    [Header("ストーリー参照")]
+    public StoryData sampleStoryData;
 
     // バフ状態管理
     public bool isBuffActive = false;
@@ -58,11 +73,24 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        currentState = GameState.Story;
         InitializeGame();
+        
+        // テスト用：開始直後にストーリーを流す
+        if (StoryManager.Instance != null && sampleStoryData != null)
+        {
+            StoryManager.Instance.PlayStory(sampleStoryData);
+        }
+        else
+        {
+            // ストーリーデータがない場合はそのままバトルへ
+            EndStoryTransitionToBattle();
+        }
     }
 
     void Update()
     {
+        if (currentState != GameState.Battle) return; // バトル中以外はタイマーや勝敗判定を進めない
         if (isGameOver || isVictory) return;
 
         // バフタイマー管理
@@ -167,8 +195,15 @@ public class GameManager : MonoBehaviour
         typingController?.DisableInput();
     }
 
+    public void EndStoryTransitionToBattle()
+    {
+        currentState = GameState.Battle;
+        typingController?.EnableInput();
+    }
+
     public void TogglePause()
     {
+        if (currentState != GameState.Battle) return;
         if (isGameOver || isVictory) return;
 
         isPaused = !isPaused;

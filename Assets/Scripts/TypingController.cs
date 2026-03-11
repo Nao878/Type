@@ -21,6 +21,7 @@ public class TypingController : MonoBehaviour
     void Update()
     {
         if (!inputEnabled) return;
+        if (GameManager.Instance != null && GameManager.Instance.currentState != GameState.Battle) return;
 
         // キー入力を取得
         foreach (char c in Input.inputString)

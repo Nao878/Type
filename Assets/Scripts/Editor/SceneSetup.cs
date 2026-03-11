@@ -23,6 +23,10 @@ public class SceneSetup : MonoBehaviour
         GameObject gameManagerObj = new GameObject("GameManager");
         GameManager gameManager = gameManagerObj.AddComponent<GameManager>();
         
+        // テスト用ストーリーセットアップスクリプトを追加
+        SetupTestStory setupTestStory = gameManagerObj.AddComponent<SetupTestStory>();
+        setupTestStory.gameManager = gameManager;
+        
         // Enemyオブジェクト作成
         GameObject enemyObj = new GameObject("Enemy");
         Enemy enemy = enemyObj.AddComponent<Enemy>();
@@ -42,6 +46,10 @@ public class SceneSetup : MonoBehaviour
         typingController.skillDatabase = skillDatabase;
         gameManager.skillDatabase = skillDatabase;
         typingController.uiManager = null; // uiManagerは後で設定
+        
+        // StoryManagerオブジェクト作成
+        GameObject storyManagerObj = new GameObject("StoryManager");
+        StoryManager storyManager = storyManagerObj.AddComponent<StoryManager>();
 
         // Canvas作成
         Canvas canvas = CreateCanvas();
@@ -57,7 +65,7 @@ public class SceneSetup : MonoBehaviour
         typingController.uiManager = uiManager;
 
         // UI構築
-        SetupUI(canvas, uiManager, typingController, gameManager);
+        SetupUI(canvas, uiManager, typingController, gameManager, storyManager);
 
         // シーンをdirtyにマークして保存を促す
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -80,14 +88,15 @@ public class SceneSetup : MonoBehaviour
 
     static void ClearScene()
     {
-        // シーン内の全オブジェクトを取得
-        GameObject[] allObjects = GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (GameObject obj in allObjects)
+        // アクティブなシーンのルートオブジェクトを取得して削除
+        GameObject[] rootObjects = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (GameObject obj in rootObjects)
         {
-            // カメラとEventSystemは残す
-            if (obj.GetComponent<Camera>() != null) continue;
-            if (obj.GetComponent<UnityEngine.EventSystems.EventSystem>() != null) continue;
-            if (obj.transform.parent != null) continue; // 子オブジェクトはスキップ
+            if (obj == null) continue;
+            
+            // カメラとEventSystemは残す（子オブジェクトに含まれている場合も考慮）
+            if (obj.GetComponent<Camera>() != null || obj.GetComponentInChildren<Camera>(true) != null) continue;
+            if (obj.GetComponent<UnityEngine.EventSystems.EventSystem>() != null || obj.GetComponentInChildren<UnityEngine.EventSystems.EventSystem>(true) != null) continue;
             
             DestroyImmediate(obj);
         }
@@ -129,7 +138,7 @@ public class SceneSetup : MonoBehaviour
 
     static TMP_FontAsset currentFontAsset;
 
-    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager)
+    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager, StoryManager storyManager)
     {
         currentFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/NotoSansJP-Bold SDF.asset");
         if (uiManager != null) uiManager.mainFont = currentFontAsset;
@@ -145,7 +154,7 @@ public class SceneSetup : MonoBehaviour
         GameObject enemyArea = new GameObject("EnemyArea");
         enemyArea.transform.SetParent(canvas.transform);
         RectTransform enemyAreaRect = enemyArea.AddComponent<RectTransform>();
-        enemyAreaRect.anchoredPosition = new Vector2(0, 300);
+        enemyAreaRect.anchoredPosition = new Vector2(0, 400); // 300 -> 400
         enemyAreaRect.sizeDelta = new Vector2(400, 300);
 
         // 敵画像
@@ -166,6 +175,7 @@ public class SceneSetup : MonoBehaviour
         // 敵HPバー
         GameObject enemyHPBarObj = CreateImage(enemyArea.transform, "EnemyHPBar", new Vector2(0, -130), new Vector2(400, 40));
         Image enemyHPBar = enemyHPBarObj.GetComponent<Image>();
+        enemyHPBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
         enemyHPBar.color = Color.red;
         enemyHPBar.type = Image.Type.Filled;
         enemyHPBar.fillMethod = Image.FillMethod.Horizontal;
@@ -207,7 +217,7 @@ public class SceneSetup : MonoBehaviour
             GameObject partyMemberArea = new GameObject($"PartyMember{i + 1}");
             partyMemberArea.transform.SetParent(canvas.transform);
             RectTransform partyRect = partyMemberArea.AddComponent<RectTransform>();
-            partyRect.anchoredPosition = new Vector2(xPos, -300);
+            partyRect.anchoredPosition = new Vector2(xPos, -200); // -300 -> -200
             partyRect.sizeDelta = new Vector2(200, 250);
 
             // ターゲットハイライト
@@ -239,6 +249,7 @@ public class SceneSetup : MonoBehaviour
             // HPバー
             GameObject hpBarObj = CreateImage(partyMemberArea.transform, "HPBar", new Vector2(0, -90), new Vector2(280, 30));
             Image hpBar = hpBarObj.GetComponent<Image>();
+            hpBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             hpBar.color = Color.green;
             hpBar.type = Image.Type.Filled;
             hpBar.fillMethod = Image.FillMethod.Horizontal;
@@ -262,7 +273,7 @@ public class SceneSetup : MonoBehaviour
         GameObject typingArea = new GameObject("TypingArea");
         typingArea.transform.SetParent(canvas.transform);
         RectTransform typingRect = typingArea.AddComponent<RectTransform>();
-        typingRect.anchoredPosition = new Vector2(0, -100);
+        typingRect.anchoredPosition = new Vector2(0, 0); // -100 -> 0
         typingRect.sizeDelta = new Vector2(1200, 200);
 
         // 入力表示背景
@@ -381,9 +392,12 @@ public class SceneSetup : MonoBehaviour
         uiManager.comboText = comboTmp;
 
         // === Pause / Spellbook ボタン ===
-        GameObject pauseBtnObj = CreateButton(canvas.transform, "PauseButton", new Vector2(800, 480), new Vector2(240, 100), "Spellbook");
-        Button pauseBtn = pauseBtnObj.GetComponent<Button>();
-        uiManager.pauseButton = pauseBtn;
+        GameObject spellbookObj = CreateButton(canvas.transform, "SpellbookButton", new Vector2(800, 480), new Vector2(160, 60), "Spellbook");
+        Button spellbookButton = spellbookObj.GetComponent<Button>();
+        uiManager.pauseButton = spellbookButton; // Assuming pauseButton is now spellbookButton
+
+        // === StoryPanelの作成 ===
+        SetupStoryUI(canvas, storyManager);
 
         // === Skill Dictionary Panel ===
         GameObject dictPanel = CreateImage(canvas.transform, "SkillDictionaryPanel", Vector2.zero, new Vector2(1920, 1080));
@@ -497,6 +511,101 @@ public class SceneSetup : MonoBehaviour
         // パネルをUIManagerに割り当てて非表示にする
         uiManager.skillDictionaryPanel = dictPanel;
         dictPanel.SetActive(false);
+    }
+
+    static void SetupStoryUI(Canvas canvas, StoryManager storyManager)
+    {
+        if (storyManager == null) return;
+
+        // 大外のストーリーパネル（全画面）
+        GameObject storyPanelObj = new GameObject("StoryPanel");
+        storyPanelObj.transform.SetParent(canvas.transform);
+        RectTransform panelRect = storyPanelObj.AddComponent<RectTransform>();
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.sizeDelta = Vector2.zero;
+        panelRect.anchoredPosition = Vector2.zero;
+
+        // 背景画像（暗い色）
+        GameObject bgObj = CreateImage(storyPanelObj.transform, "StoryBackground", Vector2.zero, Vector2.zero);
+        RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.sizeDelta = Vector2.zero;
+        bgObj.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 1f);
+
+        // 立ち絵（左）
+        GameObject leftChar = CreateImage(storyPanelObj.transform, "LeftCharacter", new Vector2(-500, 100), new Vector2(400, 600));
+        leftChar.SetActive(false); // 初期は非表示
+        storyManager.leftCharacterImage = leftChar.GetComponent<Image>();
+
+        // 立ち絵（右）
+        GameObject rightChar = CreateImage(storyPanelObj.transform, "RightCharacter", new Vector2(500, 100), new Vector2(400, 600));
+        rightChar.SetActive(false); // 初期は非表示
+        storyManager.rightCharacterImage = rightChar.GetComponent<Image>();
+
+        // クリック送り用の全画面透明ボタン
+        GameObject nextBtnObj = new GameObject("NextButton");
+        nextBtnObj.transform.SetParent(storyPanelObj.transform);
+        RectTransform nextRect = nextBtnObj.AddComponent<RectTransform>();
+        nextRect.anchorMin = Vector2.zero;
+        nextRect.anchorMax = Vector2.one;
+        nextRect.sizeDelta = Vector2.zero;
+        nextRect.anchoredPosition = Vector2.zero;
+        Image nextImg = nextBtnObj.AddComponent<Image>();
+        nextImg.color = new Color(0, 0, 0, 0); // 完全透明
+        Button nextBtn = nextBtnObj.AddComponent<Button>();
+        storyManager.nextButton = nextBtn;
+
+        // メッセージウィンドウ（下部）
+        GameObject msgWindow = CreateImage(storyPanelObj.transform, "MessageWindow", new Vector2(0, -350), new Vector2(1600, 300));
+        msgWindow.GetComponent<Image>().color = new Color(0, 0, 0, 0.8f);
+
+        // 名前テキスト
+        GameObject nameTextObj = CreateText(msgWindow.transform, "SpeakerNameText", new Vector2(-600, 100), "Speaker Name");
+        TMP_Text nameTmp = nameTextObj.GetComponent<TMP_Text>();
+        nameTmp.fontSize = 48;
+        nameTmp.color = Color.cyan;
+        nameTmp.alignment = TextAlignmentOptions.TopLeft;
+        nameTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 100);
+        storyManager.speakerNameText = nameTmp;
+
+        // セリフテキスト
+        GameObject dialogTextObj = CreateText(msgWindow.transform, "DialogText", new Vector2(0, -20), "Dialog goes here...");
+        TMP_Text dialogTmp = dialogTextObj.GetComponent<TMP_Text>();
+        dialogTmp.fontSize = 40;
+        dialogTmp.alignment = TextAlignmentOptions.TopLeft;
+        dialogTmp.enableWordWrapping = true;
+        dialogTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(1500, 200);
+        storyManager.dialogText = dialogTmp;
+
+        // 選択肢コンテナ（画面中央）
+        GameObject choicesContainer = new GameObject("ChoicesContainer");
+        choicesContainer.transform.SetParent(storyPanelObj.transform);
+        RectTransform choicesRect = choicesContainer.AddComponent<RectTransform>();
+        choicesRect.anchoredPosition = new Vector2(0, 0);
+        choicesRect.sizeDelta = new Vector2(600, 400);
+        UnityEngine.UI.VerticalLayoutGroup vlg = choicesContainer.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        vlg.childAlignment = TextAnchor.MiddleCenter;
+        vlg.spacing = 20;
+        vlg.childControlHeight = true;
+        vlg.childControlWidth = true;
+        storyManager.choicesContainer = choicesContainer;
+        choicesContainer.SetActive(false);
+
+        // 選択肢ボタンのプレハブを作成（とりあえずPrefabではなく非アクティブなオブジェクトとして持たせておく）
+        GameObject choicePrefab = CreateButton(choicesContainer.transform, "ChoicePrefab", Vector2.zero, new Vector2(500, 80), "Choice");
+        choicePrefab.SetActive(false);
+        storyManager.choiceButtonPrefab = choicePrefab;
+
+        // スキップボタン（右上）
+        GameObject skipBtnObj = CreateButton(storyPanelObj.transform, "SkipButton", new Vector2(800, 450), new Vector2(160, 60), "Skip");
+        Button skipBtn = skipBtnObj.GetComponent<Button>();
+        storyManager.skipButton = skipBtn;
+
+        // マネージャーとパネルをリンク
+        storyManager.storyPanel = storyPanelObj;
+        storyPanelObj.SetActive(false); // 初期は非表示
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)
