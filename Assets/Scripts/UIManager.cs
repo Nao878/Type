@@ -209,7 +209,7 @@ public class UIManager : MonoBehaviour
     {
         if (hasShownAttackTutorial || tutorialText == null) return;
         hasShownAttackTutorial = true;
-        ShowTutorialMessage("「attack」とキーボードで打てば、攻撃できる！", 10f);
+        ShowTutorialMessage("「attack」と入力して攻撃できる！", 10f);
     }
 
     /// <summary>

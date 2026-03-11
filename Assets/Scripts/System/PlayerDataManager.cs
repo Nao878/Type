@@ -12,9 +12,11 @@ public class PlayerDataManager : MonoBehaviour
 
     public int HackCoins { get; private set; }
     public List<string> UnlockedCharacters { get; private set; } = new List<string>();
+    public List<string> PartyFormation { get; private set; } = new List<string>();
 
     private const string COIN_KEY = "HackCoins";
     private const string CHARA_KEY = "UnlockedCharacters";
+    private const string FORMATION_KEY = "PartyFormation";
 
     void Awake()
     {
@@ -31,9 +33,9 @@ public class PlayerDataManager : MonoBehaviour
 
     public void LoadData()
     {
-        HackCoins = PlayerPrefs.GetInt(COIN_KEY, 0); // 初期コインは0
+        HackCoins = PlayerPrefs.GetInt(COIN_KEY, 0);
         
-        string charaStr = PlayerPrefs.GetString(CHARA_KEY, "GlassMan"); // 初期キャラはGlassManのみ
+        string charaStr = PlayerPrefs.GetString(CHARA_KEY, "GlassMan");
         if (string.IsNullOrEmpty(charaStr))
         {
             UnlockedCharacters = new List<string> { "GlassMan" };
@@ -42,12 +44,27 @@ public class PlayerDataManager : MonoBehaviour
         {
             UnlockedCharacters = charaStr.Split(',').Distinct().ToList();
         }
+
+        // パーティ編成読み込み
+        string formStr = PlayerPrefs.GetString(FORMATION_KEY, "");
+        if (string.IsNullOrEmpty(formStr))
+        {
+            // 編成がない場合は解放済みキャラをそのまま編成に
+            PartyFormation = new List<string>(UnlockedCharacters);
+        }
+        else
+        {
+            PartyFormation = formStr.Split(',').Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+            // 解放済みに存在しないキャラを除外
+            PartyFormation = PartyFormation.Where(c => UnlockedCharacters.Contains(c)).ToList();
+        }
     }
 
     public void SaveData()
     {
         PlayerPrefs.SetInt(COIN_KEY, HackCoins);
         PlayerPrefs.SetString(CHARA_KEY, string.Join(",", UnlockedCharacters));
+        PlayerPrefs.SetString(FORMATION_KEY, string.Join(",", PartyFormation));
         PlayerPrefs.Save();
     }
 
@@ -77,11 +94,19 @@ public class PlayerDataManager : MonoBehaviour
         }
     }
 
+    // パーティ編成を保存
+    public void SavePartyFormation(List<string> formation)
+    {
+        PartyFormation = new List<string>(formation);
+        SaveData();
+    }
+
     // デバッグ・リセット用
     public void ResetData()
     {
         PlayerPrefs.DeleteKey(COIN_KEY);
         PlayerPrefs.DeleteKey(CHARA_KEY);
+        PlayerPrefs.DeleteKey(FORMATION_KEY);
         LoadData();
     }
 }

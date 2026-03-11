@@ -56,6 +56,11 @@ public class SceneSetup : MonoBehaviour
         GachaManager gachaManager = gachaManagerObj.AddComponent<GachaManager>();
         gachaManager.gameManager = gameManager;
 
+        // FormationManagerオブジェクト作成
+        GameObject formationManagerObj = new GameObject("FormationManager");
+        FormationManager formationManager = formationManagerObj.AddComponent<FormationManager>();
+        formationManager.gameManager = gameManager;
+
         // Canvas作成
         Canvas canvas = CreateCanvas();
         
@@ -69,9 +74,10 @@ public class SceneSetup : MonoBehaviour
         skillDatabase.uiManager = uiManager;
         typingController.uiManager = uiManager;
         gachaManager.uiManager = uiManager;
+        formationManager.uiManager = uiManager;
 
         // UI構築
-        SetupUI(canvas, uiManager, typingController, gameManager, storyManager, gachaManager);
+        SetupUI(canvas, uiManager, typingController, gameManager, storyManager, gachaManager, formationManager);
 
         // シーンをdirtyにマークして保存を促す
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -144,7 +150,7 @@ public class SceneSetup : MonoBehaviour
 
     static TMP_FontAsset currentFontAsset;
 
-    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager, StoryManager storyManager, GachaManager gachaManager)
+    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager, StoryManager storyManager, GachaManager gachaManager, FormationManager formationManager)
     {
         currentFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/NotoSansJP-Bold SDF.asset");
         if (uiManager != null) uiManager.mainFont = currentFontAsset;
@@ -364,7 +370,10 @@ public class SceneSetup : MonoBehaviour
         // === HomePanelの作成 ===
         SetupHomeUI(canvas, uiManager, gameManager);
 
-        // === GachaPanelの作成 ===
+        // === Formation System Panel ===
+        SetupFormationUI(canvas, formationManager);
+
+        // === Gacha System Panel ===
         SetupGachaUI(canvas, uiManager, gachaManager);
 
         // === CRITICAL!!テキスト（believeスキルクリティカル演出用） ===
@@ -417,14 +426,14 @@ public class SceneSetup : MonoBehaviour
         uiManager.comboText = comboTmp;
 
         // === チュートリアルテキスト ===
-        GameObject tutorialTextObj = CreateText(canvas.transform, "TutorialText", new Vector2(0, 350), "");
+        GameObject tutorialTextObj = CreateText(canvas.transform, "TutorialText", new Vector2(0, 150), "");
         TMP_Text tutorialTmp = tutorialTextObj.GetComponent<TMP_Text>();
         tutorialTmp.fontSize = 72;
         tutorialTmp.color = new Color(0.3f, 1f, 0.3f); // 緑色
         tutorialTmp.fontStyle = FontStyles.Bold;
         tutorialTmp.alignment = TextAlignmentOptions.Center;
-        tutorialTmp.enableWordWrapping = true;
-        tutorialTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(1400, 200);
+        tutorialTmp.enableWordWrapping = false;
+        tutorialTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(1600, 200);
         tutorialTextObj.SetActive(false);
         uiManager.tutorialText = tutorialTmp;
 
@@ -591,12 +600,88 @@ public class SceneSetup : MonoBehaviour
         gachaBtnObj.GetComponent<Image>().color = new Color(0.4f, 0.1f, 0.5f);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(gachaBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.GoToGacha));
 
-        // FORMATION（編成）ボタン ※現在は空パネルを開くのみ
+        // FORMATION（編成）ボタン
         GameObject formBtnObj = CreateButton(homePanelObj.transform, "FormationBtn", new Vector2(0, -320), new Vector2(600, 120), "FORMATION");
+        Button formBtn = formBtnObj.GetComponent<Button>();
         formBtnObj.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.4f);
-        // 将来的に編成画面を開くが、現時点では機能なし
+        if (FormationManager.Instance == null)
+        {
+            FormationManager fm = FindFirstObjectByType<FormationManager>();
+            if (fm != null) UnityEditor.Events.UnityEventTools.AddPersistentListener(formBtn.onClick, new UnityEngine.Events.UnityAction(fm.OpenFormation));
+        }
 
         homePanelObj.SetActive(false); // 初期は非表示
+    }
+
+    static void SetupFormationUI(Canvas canvas, FormationManager formationManager)
+    {
+        if (formationManager == null) return;
+
+        // パネル本体（全画面）
+        GameObject formationPanelObj = CreateImage(canvas.transform, "FormationPanel", Vector2.zero, new Vector2(1920, 1080));
+        formationPanelObj.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 0.98f);
+        formationManager.formationPanel = formationPanelObj;
+
+        // タイトル
+        GameObject titleObj = CreateText(formationPanelObj.transform, "Title", new Vector2(0, 450), "PARTY FORMATION");
+        TMP_Text titleTmp = titleObj.GetComponent<TMP_Text>();
+        titleTmp.fontSize = 72;
+        titleTmp.color = Color.cyan;
+        titleTmp.fontStyle = FontStyles.Bold;
+
+        // === 上部：パーティスロット（4つ） ===
+        GameObject slotsContainerObj = new GameObject("SlotsContainer");
+        slotsContainerObj.transform.SetParent(formationPanelObj.transform, false);
+        RectTransform slotsRect = slotsContainerObj.AddComponent<RectTransform>();
+        slotsRect.anchoredPosition = new Vector2(0, 200);
+        slotsRect.sizeDelta = new Vector2(800, 200);
+        
+        HorizontalLayoutGroup slotsLayout = slotsContainerObj.AddComponent<HorizontalLayoutGroup>();
+        slotsLayout.childAlignment = TextAnchor.MiddleCenter;
+        slotsLayout.spacing = 50;
+        slotsLayout.childControlWidth = false;
+        slotsLayout.childControlHeight = false;
+
+        formationManager.slotsContainer = slotsContainerObj.transform;
+
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject slotObj = CreateImage(slotsContainerObj.transform, $"Slot_{i}", Vector2.zero, new Vector2(140, 140));
+            Image slotImg = slotObj.GetComponent<Image>();
+            slotImg.color = new Color(0.2f, 0.2f, 0.3f, 0.8f);
+
+            FormationSlot fSlot = slotObj.AddComponent<FormationSlot>();
+            fSlot.formationManager = formationManager;
+            fSlot.slotImage = slotImg;
+            formationManager.RegisterSlot(fSlot);
+        }
+
+        // === 下部：所持キャラリスト（Roster） ===
+        GameObject rosterBgObj = CreateImage(formationPanelObj.transform, "RosterBG", new Vector2(0, -150), new Vector2(1400, 400));
+        rosterBgObj.GetComponent<Image>().color = new Color(0.05f, 0.05f, 0.1f, 0.8f);
+
+        GameObject rosterContainerObj = new GameObject("RosterContainer");
+        rosterContainerObj.transform.SetParent(rosterBgObj.transform, false);
+        RectTransform rosterRect = rosterContainerObj.AddComponent<RectTransform>();
+        rosterRect.anchoredPosition = Vector2.zero;
+        rosterRect.sizeDelta = new Vector2(1350, 350);
+
+        GridLayoutGroup rosterGrid = rosterContainerObj.AddComponent<GridLayoutGroup>();
+        rosterGrid.cellSize = new Vector2(120, 120);
+        rosterGrid.spacing = new Vector2(30, 50);
+        rosterGrid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        rosterGrid.startAxis = GridLayoutGroup.Axis.Horizontal;
+        rosterGrid.childAlignment = TextAnchor.UpperLeft;
+
+        formationManager.rosterContainer = rosterContainerObj.transform;
+
+        // BACKボタン
+        GameObject backBtnObj = CreateButton(formationPanelObj.transform, "BackButton", new Vector2(700, -400), new Vector2(300, 100), "BACK");
+        Button backBtn = backBtnObj.GetComponent<Button>();
+        backBtnObj.GetComponent<Image>().color = new Color(0.4f, 0.1f, 0.1f);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(backBtn.onClick, new UnityEngine.Events.UnityAction(formationManager.CloseFormation));
+
+        formationPanelObj.SetActive(false);
     }
 
     static void SetupStoryUI(Canvas canvas, StoryManager storyManager)

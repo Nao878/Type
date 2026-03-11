@@ -168,18 +168,30 @@ public class GameManager : MonoBehaviour
         partyMembers.Clear();
         currentPartyFormation.Clear();
 
-        // 解放済みキャラのみ編成（最大4人）
+        // 保存された編成を使用
         List<string> unlocked = new List<string> { "GlassMan" }; // 初期フォールバック
+        List<string> formation = new List<string> { "GlassMan" };
+        
         if (PlayerDataManager.Instance != null && PlayerDataManager.Instance.UnlockedCharacters.Count > 0)
         {
             unlocked = PlayerDataManager.Instance.UnlockedCharacters;
+            formation = PlayerDataManager.Instance.PartyFormation;
+            
+            if (formation == null || formation.Count == 0)
+            {
+                formation = new List<string>(unlocked);
+            }
         }
 
-        int count = Mathf.Min(unlocked.Count, 4); // 最大4人まで
+        int count = Mathf.Min(formation.Count, 4); // 最大4人まで
         for (int i = 0; i < count; i++)
         {
-            partyMembers.Add(new PartyMember(unlocked[i], 10));
-            currentPartyFormation.Add(unlocked[i]);
+            string charName = formation[i];
+            if (!string.IsNullOrEmpty(charName) && unlocked.Contains(charName))
+            {
+                partyMembers.Add(new PartyMember(charName, 10));
+                currentPartyFormation.Add(charName);
+            }
         }
 
         // 敵の初期化（HP 50）
