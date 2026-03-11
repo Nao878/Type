@@ -20,6 +20,12 @@ public class Enemy : MonoBehaviour
     public float poisonTickTimer = 0f;
     public int poisonDamagePerTick = 1;
 
+    [Header("火傷状態（新スキル）")]
+    public bool isBurned = false;
+    public float burnTimer = 0f;
+    public float burnTickTimer = 0f;
+    public int burnDamagePerTick = 1;
+
     // スロー状態（attackタイマー進行速度低下）
     public bool isSlowed = false;
     public float slowTimer = 0f;
@@ -134,6 +140,27 @@ public class Enemy : MonoBehaviour
             }
         }
 
+        // 火傷ダメージ処理
+        if (isBurned)
+        {
+            burnTimer -= Time.deltaTime;
+            burnTickTimer += Time.deltaTime;
+
+            if (burnTickTimer >= 1f)
+            {
+                int damage = gameManager.CalculateDamage(burnDamagePerTick);
+                TakeDamage(damage);
+                burnTickTimer -= 1f;
+            }
+
+            if (burnTimer <= 0f)
+            {
+                isBurned = false;
+                burnTimer = 0f;
+                burnTickTimer = 0f;
+            }
+        }
+
         // スロー効果終了判定
         if (isSlowed)
         {
@@ -203,7 +230,15 @@ public class Enemy : MonoBehaviour
         gameManager.uiManager?.ShowWarningText(false);
         gameManager.uiManager?.ShowDangerText(false);
 
-        PartyMember target = gameManager.GetRandomAliveMember();
+        PartyMember target = null;
+        if (nextTargetIndex >= 0 && nextTargetIndex < gameManager.partyMembers.Count && gameManager.partyMembers[nextTargetIndex].currentHP > 0)
+        {
+            target = gameManager.partyMembers[nextTargetIndex];
+        }
+        else
+        {
+            target = gameManager.GetRandomAliveMember();
+        }
         if (target == null) return;
 
         int damage = baseDamage;
@@ -231,6 +266,26 @@ public class Enemy : MonoBehaviour
             damage = Mathf.Max(damage, 1); // 最低1ダメージ
         }
 
+        // ガラスバリアによる反射処理
+        if (gameManager.glassBarrierActive)
+        {
+            Debug.Log($"Enemy: 攻撃がガラスバリアで反射された！({damage}ダメージ)");
+            TakeDamage(damage);
+            
+            // fireglassコンボの追加効果
+            if (gameManager.glassReflectDamage > 0)
+            {
+                Debug.Log($"Enemy: fireglassコンボの追加爆発！({gameManager.glassReflectDamage}ダメージ＆火傷)");
+                TakeDamage(gameManager.glassReflectDamage);
+                ApplyBurn(10f, 1);
+                gameManager.glassReflectDamage = 0;
+            }
+
+            gameManager.glassBarrierActive = false;
+            gameManager.uiManager?.UpdateAllUI();
+            return; // プレイヤーへのダメージ処理はスキップ
+        }
+
         target.TakeDamage(damage);
         gameManager.uiManager?.UpdateAllUI();
         gameManager.uiManager?.ShowDamageEffect(gameManager.partyMembers.IndexOf(target));
@@ -242,7 +297,7 @@ public class Enemy : MonoBehaviour
         return Random.Range(baseAttackInterval * 0.8f, baseAttackInterval * 1.2f);
     }
 
-    void DetermineNextTarget()
+    public void DetermineNextTarget()
     {
         if (gameManager == null) return;
 
@@ -277,6 +332,17 @@ public class Enemy : MonoBehaviour
         poisonTimer = duration;
         poisonTickTimer = 0f;
         poisonDamagePerTick = damagePerTick;
+    }
+
+    /// <summary>
+    /// 火傷を付与
+    /// </summary>
+    public void ApplyBurn(float duration, int damagePerTick)
+    {
+        isBurned = true;
+        burnTimer = duration;
+        burnTickTimer = 0f;
+        burnDamagePerTick = damagePerTick;
     }
 
     /// <summary>
@@ -324,6 +390,7 @@ public class Enemy : MonoBehaviour
     public void ExtendDebuffs(float seconds)
     {
         if (isPoisoned) poisonTimer += seconds;
+        if (isBurned) burnTimer += seconds;
         if (isSlowed) slowTimer += seconds;
         if (isFrozen) freezeTimer += seconds;
     }

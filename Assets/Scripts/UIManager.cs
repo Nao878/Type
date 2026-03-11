@@ -23,6 +23,7 @@ public class UIManager : MonoBehaviour
     public List<TMP_Text> partyHPTexts;
     public List<GameObject> protectEffectIcons;
     public List<Image> targetHighlights;
+    public List<TMP_Text> partySkillTexts;
 
     [Header("タイピングUI")]
     public TMP_Text currentInputText;
@@ -36,6 +37,7 @@ public class UIManager : MonoBehaviour
     [Header("エフェクト")]
     public Transform typingParticleContainer;
     public TMP_Text criticalText;
+    public TMP_FontAsset mainFont;
 
     [Header("大技・発狂演出")]
     public GameObject dangerTextObj;
@@ -92,7 +94,34 @@ public class UIManager : MonoBehaviour
         }
 
         InitializeSkillDictionaryText();
+        InitializePartySkillTexts();
         UpdateAllUI();
+    }
+
+    void InitializePartySkillTexts()
+    {
+        if (partySkillTexts == null || gameManager == null || gameManager.skillDatabase == null) return;
+
+        var charSkills = gameManager.skillDatabase.characterSkills;
+        if (charSkills == null) return;
+
+        for (int i = 0; i < partySkillTexts.Count; i++)
+        {
+            if (partySkillTexts[i] == null) continue;
+
+            if (i < gameManager.partyMembers.Count)
+            {
+                string charName = gameManager.partyMembers[i].name;
+                if (charSkills.ContainsKey(charName))
+                {
+                    partySkillTexts[i].text = string.Join("\n", charSkills[charName]);
+                }
+                else
+                {
+                    partySkillTexts[i].text = "";
+                }
+            }
+        }
     }
 
     void InitializeSkillDictionaryText()
@@ -393,8 +422,10 @@ public class UIManager : MonoBehaviour
 
         TextMeshProUGUI tmp = particleObj.AddComponent<TextMeshProUGUI>();
         tmp.text = c.ToString().ToUpper();
-        tmp.fontSize = Random.Range(28, 48);
+        if (mainFont != null) tmp.font = mainFont;
+        tmp.fontSize = Random.Range(56, 96);
         tmp.alignment = TextAlignmentOptions.Center;
+        tmp.overflowMode = TextOverflowModes.Overflow;
         tmp.color = new Color(
             Random.Range(0.6f, 1f),
             Random.Range(0.8f, 1f),

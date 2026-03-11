@@ -38,6 +38,12 @@ public class GameManager : MonoBehaviour
     // 次のターゲット表示用
     public int nextTargetIndex = -1;
 
+    [Header("新スキル用状態管理")]
+    public bool glassBarrierActive = false;
+    public int glassReflectDamage = 0;
+    public bool isSparkActive = false;
+    public float sparkMultiplier = 1.5f;
+
     void Awake()
     {
         if (Instance == null)
@@ -70,10 +76,10 @@ public class GameManager : MonoBehaviour
     {
         // 味方4人の初期化（HP 10）
         partyMembers.Clear();
-        partyMembers.Add(new PartyMember("キャラ1", 10));
-        partyMembers.Add(new PartyMember("キャラ2", 10));
-        partyMembers.Add(new PartyMember("キャラ3", 10));
-        partyMembers.Add(new PartyMember("キャラ4", 10));
+        partyMembers.Add(new PartyMember("GlassMan", 10));
+        partyMembers.Add(new PartyMember("Gentleman", 10));
+        partyMembers.Add(new PartyMember("CatGirl", 10));
+        partyMembers.Add(new PartyMember("YellowGirl", 10));
 
         // 敵の初期化（HP 50）
         if (enemy != null)
@@ -197,6 +203,14 @@ public class GameManager : MonoBehaviour
         if (applyBelieve && UnityEngine.Random.value < 0.3f)
         {
             damage *= 3f;
+        }
+
+        // sparkが有効なら1.5倍にしてフラグ消費
+        if (isSparkActive)
+        {
+            damage *= sparkMultiplier;
+            isSparkActive = false; // 消費
+            Debug.Log($"spark効果発動！ダメージが{sparkMultiplier}倍！");
         }
 
         return Mathf.RoundToInt(damage);

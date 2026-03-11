@@ -20,6 +20,7 @@ public class SkillDatabase : MonoBehaviour
 
     private Dictionary<string, Action> skills;
     private Dictionary<string, string> skillDescriptions;
+    public Dictionary<string, List<string>> characterSkills;
 
     void Awake()
     {
@@ -58,7 +59,17 @@ public class SkillDatabase : MonoBehaviour
             {"divide", SkillDivide},    // 敵の現在HPの10%分のダメージ
             {"finish", SkillFinish},    // 敵HP10%以下（5以下）なら即座に勝利
             {"shield", SkillShield},    // 敵の大技準備中（3秒以内）に防御する
-            {"water", SkillWater}       // 基本ダメージ1（コンボ用）
+            {"water", SkillWater},      // 基本ダメージ1（コンボ用）
+
+            // === 新規追加スキル ===
+            {"cure", SkillCure},
+            {"glass", SkillGlass},
+            {"trick", SkillTrick},
+            {"clock", SkillClock},
+            {"scratch", SkillScratch},
+            {"cat", SkillCat},
+            {"fire", SkillFire},
+            {"spark", SkillSpark}
         };
 
         skillDescriptions = new Dictionary<string, string>()
@@ -83,13 +94,53 @@ public class SkillDatabase : MonoBehaviour
             {"divide", "割合ダメ"},
             {"finish", "即死"},
             {"shield", "防御"},
-            {"water", "水撃"}
+            {"water", "水撃"},
+
+            {"cure", "デバフ解除"},
+            {"glass", "反射バリア"},
+            {"trick", "タゲ変更"},
+            {"clock", "3秒巻戻し"},
+            {"scratch", "2ダメージ"},
+            {"cat", "1秒回避"},
+            {"fire", "3ダメ+火傷"},
+            {"spark", "次弾1.5倍"}
         };
+
+        characterSkills = new Dictionary<string, List<string>>()
+        {
+            {"GlassMan", new List<string>{"apple", "supply", "protect", "cure", "glass"}},
+            {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock"}},
+            {"CatGirl", new List<string>{"poison", "speed", "scratch", "cat"}},
+            {"YellowGirl", new List<string>{"attack", "believe", "finish", "fire", "spark"}}
+        };
+    }
+
+    public List<string> GetAvailableSkills()
+    {
+        List<string> available = new List<string>();
+        if (gameManager == null) return available;
+        
+        foreach (var member in gameManager.partyMembers)
+        {
+            // 生死に関わらず編成されていれば使えるか、生きている時だけか？
+            // 仕様「プレイヤーは編成されているキャラクターのスペルのみ入力可能となります」に基づく
+            // （現状は編成されていれば入力可能とするが、必要なら && member.currentHP > 0 を追加）
+            if (characterSkills.ContainsKey(member.name))
+            {
+                available.AddRange(characterSkills[member.name]);
+            }
+        }
+        return available;
     }
 
     public bool HasSkill(string word)
     {
-        return skills.ContainsKey(word.ToLower());
+        string key = word.ToLower();
+        if (!skills.ContainsKey(key)) return false;
+        
+        // 利用可能なスキルリストに含まれるか判定
+        var available = GetAvailableSkills();
+        return available.Contains(key);
     }
 
     public List<string> GetSuggestions(string prefix, int maxCount = 3)
@@ -98,12 +149,14 @@ public class SkillDatabase : MonoBehaviour
         if (string.IsNullOrEmpty(prefix)) return results;
 
         string searchPrefix = prefix.ToLower();
-        foreach (var kvp in skills)
+        var available = GetAvailableSkills();
+
+        foreach (var skillName in available)
         {
-            if (kvp.Key.StartsWith(searchPrefix))
+            if (skillName.StartsWith(searchPrefix) && skills.ContainsKey(skillName))
             {
-                string desc = skillDescriptions.ContainsKey(kvp.Key) ? skillDescriptions[kvp.Key] : "??";
-                results.Add($"{kvp.Key}({desc})");
+                string desc = skillDescriptions.ContainsKey(skillName) ? skillDescriptions[skillName] : "??";
+                results.Add($"{skillName}({desc})");
                 if (results.Count >= maxCount) break;
             }
         }
@@ -169,6 +222,15 @@ public class SkillDatabase : MonoBehaviour
             target.Heal(2);
             uiManager?.UpdateAllUI();
             Debug.Log($"apple: {target.name}を2回復");
+
+            // protectappleコンボ
+            if (lastSkillExecuted == "protect" && Time.time - lastSkillTime <= 5f)
+            {
+                target.SetInvincible(5f);
+                uiManager?.ShowComboText("COMBO: PROTECTAPPLE!");
+                uiManager?.ShowProtectEffect(gameManager.partyMembers.IndexOf(target));
+                Debug.Log($"コンボ発動！ protect -> apple (protectapple: {target.name}を無敵化)");
+            }
         }
     }
 
@@ -404,6 +466,14 @@ public class SkillDatabase : MonoBehaviour
                 uiManager?.ShowComboText("COMBO: WATER -> FREEZE!");
                 Debug.Log("コンボ発動！ water -> freeze (凍結時間が6秒に延長)");
             }
+            // コンボ判定：直前が "poison" だった場合 (coldpoison)
+            else if (lastSkillExecuted == "poison" && Time.time - lastSkillTime <= 5f)
+            {
+                duration = 6f; // コンボで2倍
+                if (enemy.isPoisoned) enemy.poisonDamagePerTick *= 2; // 毒ダメージ倍増
+                uiManager?.ShowComboText("COMBO: COLDPOISON!");
+                Debug.Log("コンボ発動！ poison -> freeze (coldpoison: 凍結6秒＆毒ダメージ倍増)");
+            }
             else
             {
                 Debug.Log($"freeze 発動 (凍結時間3秒)");
@@ -473,6 +543,106 @@ public class SkillDatabase : MonoBehaviour
             uiManager?.UpdateAllUI();
             uiManager?.ShowDamageEffect(-1); // 全体化エフェクトか無指定
             Debug.Log($"water 発動! 敵に {damage} ダメージ");
+        }
+    }
+
+    // ========================================
+    // 追加スキル（GlassMan, Gentleman, CatGirl, YellowGirl用）
+    // ========================================
+
+    void SkillCure()
+    {
+        // デバフ解除（今回は特定の状態がないため仮ログのみ）
+        Debug.Log("cure: 味方のデバフを解除！");
+    }
+
+    void SkillGlass()
+    {
+        // 反射バリア
+        if (gameManager != null)
+        {
+            gameManager.glassBarrierActive = true;
+            Debug.Log("glass: 1回反射バリアを張った！");
+
+            // fireglassコンボ
+            if (lastSkillExecuted == "fire" && Time.time - lastSkillTime <= 5f)
+            {
+                gameManager.glassReflectDamage = 5; // 追加爆発ダメージ（仮で5に設定）
+                uiManager?.ShowComboText("COMBO: FIREGLASS!");
+                Debug.Log("コンボ発動！ fire -> glass (fireglass: 反射時爆発ダメージ＆火傷)");
+            }
+        }
+    }
+
+    void SkillTrick()
+    {
+        // ターゲット変更
+        if (enemy != null)
+        {
+            // publicメソッド DetermineNextTarget() を追加して呼ぶか、インデックスを再抽選するか
+            // ひとまず Enemy側に DetermineNextTarget をpublic化して対処（後ほどEnemy修正）
+            enemy.DetermineNextTarget();
+            Debug.Log("trick: 敵のターゲットシャッフル！");
+        }
+    }
+
+    void SkillClock()
+    {
+        // タイマー3秒巻き戻し
+        if (enemy != null)
+        {
+            enemy.attackTimer += 3f;
+            Debug.Log("clock: 敵の攻撃タイマーを3秒巻き戻した！");
+        }
+    }
+
+    void SkillScratch()
+    {
+        // 2ダメージ
+        if (enemy != null)
+        {
+            int damage = 2;
+            if (gameManager != null && gameManager.isBuffActive) damage *= 2;
+            enemy.TakeDamage(damage);
+            uiManager?.UpdateAllUI();
+            Debug.Log($"scratch: 敵に {damage} ダメージ");
+        }
+    }
+
+    void SkillCat()
+    {
+        // 1秒完全回避
+        if (gameManager != null)
+        {
+            foreach (var member in gameManager.partyMembers)
+            {
+                if (member.currentHP > 0) member.SetInvincible(1f);
+            }
+            Debug.Log("cat: 1秒間全員完全回避！");
+        }
+    }
+
+    void SkillFire()
+    {
+        // 3ダメ＋火傷
+        if (enemy != null)
+        {
+            int damage = 3;
+            if (gameManager != null && gameManager.isBuffActive) damage *= 2;
+            enemy.TakeDamage(damage);
+            enemy.ApplyBurn(10f, 1); // あとでEnemyに追加
+            uiManager?.UpdateAllUI();
+            Debug.Log($"fire: 敵に {damage} ダメージ ＋火傷付与");
+        }
+    }
+
+    void SkillSpark()
+    {
+        // 次弾1.5倍
+        if (gameManager != null)
+        {
+            gameManager.isSparkActive = true;
+            Debug.Log("spark: 次の攻撃の威力1.5倍！");
         }
     }
 }
