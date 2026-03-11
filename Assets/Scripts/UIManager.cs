@@ -57,6 +57,14 @@ public class UIManager : MonoBehaviour
     public UnityEngine.UI.Button pauseButton;
     public UnityEngine.UI.Button resumeButton;
 
+    [Header("ガチャ関連UI")]
+    public GameObject gachaPanel;
+    public TMP_Text coinText; // 現在のコイン表示
+    public GameObject gachaResultPanel; // 結果表示用サブパネル
+    public TMP_Text gachaResultText;
+    public Image gachaResultImage;
+    public TMP_Text victoryCoinText; // リザルト画面で獲得コインを表示する用
+
     [Header("参照")]
     public GameManager gameManager;
     public Enemy enemy;
@@ -69,6 +77,8 @@ public class UIManager : MonoBehaviour
         if (gameOverPanel != null) gameOverPanel.SetActive(false);
         if (victoryPanel != null) victoryPanel.SetActive(false);
         if (skillDictionaryPanel != null) skillDictionaryPanel.SetActive(false);
+        if (gachaPanel != null) gachaPanel.SetActive(false);
+        if (gachaResultPanel != null) gachaResultPanel.SetActive(false);
         if (poisonEffectIcon != null) poisonEffectIcon.SetActive(false);
         if (freezeEffectIcon != null) freezeEffectIcon.SetActive(false);
         if (slowEffectIcon != null) slowEffectIcon.SetActive(false);
@@ -379,11 +389,70 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void ShowVictory()
+    public void ShowVictory(int earnedCoins)
     {
         if (victoryPanel != null)
         {
             victoryPanel.SetActive(true);
+            if (victoryCoinText != null)
+            {
+                victoryCoinText.text = $"HACK COINS +{earnedCoins}!";
+            }
+        }
+    }
+
+    // ========================================
+    // ガチャUI関連
+    // ========================================
+    public void ShowGachaPanel()
+    {
+        if (gachaPanel != null)
+        {
+            gachaPanel.SetActive(true);
+            UpdateCoinText();
+        }
+        if (victoryPanel != null) victoryPanel.SetActive(false); // リザルトを閉じる
+    }
+
+    public void HideGachaPanel()
+    {
+        if (gachaPanel != null) gachaPanel.SetActive(false);
+        if (gachaResultPanel != null) gachaResultPanel.SetActive(false);
+    }
+
+    public void HideGachaResultPanel()
+    {
+        if (gachaResultPanel != null) gachaResultPanel.SetActive(false);
+    }
+
+    public void UpdateCoinText()
+    {
+        if (coinText != null && PlayerDataManager.Instance != null)
+        {
+            coinText.text = $"Coins: {PlayerDataManager.Instance.HackCoins}";
+        }
+    }
+
+    public void ShowGachaResult(string message, string charaName = null)
+    {
+        if (gachaResultPanel != null) gachaResultPanel.SetActive(true);
+        if (gachaResultText != null) gachaResultText.text = message;
+
+        if (gachaResultImage != null)
+        {
+            if (!string.IsNullOrEmpty(charaName))
+            {
+                gachaResultImage.gameObject.SetActive(true);
+                // リソースのパスからSpriteを取得
+                #if UNITY_EDITOR
+                Sprite spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Images/Chara/{charaName}.jpg");
+                if (spr != null) gachaResultImage.sprite = spr;
+                #endif
+            }
+            else
+            {
+                gachaResultImage.gameObject.SetActive(false);
+            }
         }
     }
 

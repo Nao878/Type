@@ -10,7 +10,8 @@ public enum GameState
     Title,
     Story,
     Battle,
-    Result
+    Result,
+    Gacha
 }
 
 /// <summary>
@@ -88,6 +89,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void ChangeState(GameState newState)
+    {
+        currentState = newState;
+        if (newState == GameState.Title)
+        {
+            // 簡易的にシーンをリロードして初期状態に戻す
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        }
+    }
+
     void Update()
     {
         if (currentState != GameState.Battle) return; // バトル中以外はタイマーや勝敗判定を進めない
@@ -102,12 +113,20 @@ public class GameManager : MonoBehaviour
 
     void InitializeGame()
     {
-        // 味方4人の初期化（HP 10）
+        // 味方初期化（HP 10）
         partyMembers.Clear();
-        partyMembers.Add(new PartyMember("GlassMan", 10));
-        partyMembers.Add(new PartyMember("Gentleman", 10));
-        partyMembers.Add(new PartyMember("CatGirl", 10));
-        partyMembers.Add(new PartyMember("YellowGirl", 10));
+
+        // 解放済みキャラのみ編成
+        List<string> unlocked = new List<string> { "GlassMan" }; // 初期フォールバック
+        if (PlayerDataManager.Instance != null && PlayerDataManager.Instance.UnlockedCharacters.Count > 0)
+        {
+            unlocked = PlayerDataManager.Instance.UnlockedCharacters;
+        }
+
+        foreach (var chara in unlocked)
+        {
+            partyMembers.Add(new PartyMember(chara, 10));
+        }
 
         // 敵の初期化（HP 50）
         if (enemy != null)
@@ -184,7 +203,23 @@ public class GameManager : MonoBehaviour
     public void Victory()
     {
         isVictory = true;
-        uiManager?.ShowVictory();
+        currentState = GameState.Result;
+
+        // ハックコインを付与（例：100コイン）
+        int earnedCoins = 100;
+        if (PlayerDataManager.Instance != null)
+        {
+            PlayerDataManager.Instance.AddCoins(earnedCoins);
+            Debug.Log($"ハックコインを獲得しました: {earnedCoins}枚");
+        }
+
+        // 引数付きでUIManagerへ渡す
+        // UI側で修正が必要な場合は後ほどUIManagerの変更で行う
+        if (uiManager != null)
+        {
+            uiManager.ShowVictory(earnedCoins);
+        }
+
         typingController?.DisableInput();
     }
 

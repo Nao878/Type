@@ -51,6 +51,11 @@ public class SceneSetup : MonoBehaviour
         GameObject storyManagerObj = new GameObject("StoryManager");
         StoryManager storyManager = storyManagerObj.AddComponent<StoryManager>();
 
+        // GachaManagerオブジェクト作成
+        GameObject gachaManagerObj = new GameObject("GachaManager");
+        GachaManager gachaManager = gachaManagerObj.AddComponent<GachaManager>();
+        gachaManager.gameManager = gameManager;
+
         // Canvas作成
         Canvas canvas = CreateCanvas();
         
@@ -63,9 +68,10 @@ public class SceneSetup : MonoBehaviour
         gameManager.uiManager = uiManager;
         skillDatabase.uiManager = uiManager;
         typingController.uiManager = uiManager;
+        gachaManager.uiManager = uiManager;
 
         // UI構築
-        SetupUI(canvas, uiManager, typingController, gameManager, storyManager);
+        SetupUI(canvas, uiManager, typingController, gameManager, storyManager, gachaManager);
 
         // シーンをdirtyにマークして保存を促す
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -138,7 +144,7 @@ public class SceneSetup : MonoBehaviour
 
     static TMP_FontAsset currentFontAsset;
 
-    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager, StoryManager storyManager)
+    static void SetupUI(Canvas canvas, UIManager uiManager, TypingController typingController, GameManager gameManager, StoryManager storyManager, GachaManager gachaManager)
     {
         currentFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/NotoSansJP-Bold SDF.asset");
         if (uiManager != null) uiManager.mainFont = currentFontAsset;
@@ -335,12 +341,28 @@ public class SceneSetup : MonoBehaviour
         uiManager.gameOverPanel = gameOverPanel;
 
         // 勝利パネル
-        GameObject victoryPanel = CreateImage(canvas.transform, "VictoryPanel", Vector2.zero, new Vector2(800, 400));
+        GameObject victoryPanel = CreateImage(canvas.transform, "VictoryPanel", Vector2.zero, new Vector2(800, 500));
         victoryPanel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.9f);
-        GameObject victoryText = CreateText(victoryPanel.transform, "VictoryText", Vector2.zero, "VICTORY!");
-        victoryText.GetComponent<TMP_Text>().fontSize = 144;
+        GameObject victoryText = CreateText(victoryPanel.transform, "VictoryText", new Vector2(0, 150), "VICTORY!");
+        victoryText.GetComponent<TMP_Text>().fontSize = 120;
         victoryText.GetComponent<TMP_Text>().color = Color.green;
+        
+        GameObject vCoinTextObj = CreateText(victoryPanel.transform, "VictoryCoinText", new Vector2(0, 0), "HACK COINS +0!");
+        TMP_Text vCoinTmp = vCoinTextObj.GetComponent<TMP_Text>();
+        vCoinTmp.fontSize = 80;
+        vCoinTmp.color = Color.yellow;
+        uiManager.victoryCoinText = vCoinTmp;
+
+        GameObject toGachaBtnObj = CreateButton(victoryPanel.transform, "ToGachaBtn", new Vector2(0, -150), new Vector2(400, 100), "To Gacha");
+        // エディタスクリプトからのイベント登録は実行時に消える可能性があるが、
+        // 簡易実装としてGachaPanelへの遷移をGameManager経由か動的登録させる。
+        // ここではGachaManager等に依存しないように直接設定するよりも実行時にUIManager等でAddListenerすべきだが
+        // 現行の作りに合わせてSceneSetupでAddListenerを試みる。（後でUIManagerのStartで再設定が必要かも）
+
         uiManager.victoryPanel = victoryPanel;
+
+        // === GachaPanelの作成 ===
+        SetupGachaUI(canvas, uiManager, gachaManager);
 
         // === CRITICAL!!テキスト（believeスキルクリティカル演出用） ===
         GameObject criticalTextObj = CreateText(canvas.transform, "CriticalText", Vector2.zero, "");
@@ -606,6 +628,61 @@ public class SceneSetup : MonoBehaviour
         // マネージャーとパネルをリンク
         storyManager.storyPanel = storyPanelObj;
         storyPanelObj.SetActive(false); // 初期は非表示
+    }
+
+    static void SetupGachaUI(Canvas canvas, UIManager uiManager, GachaManager gachaManager)
+    {
+        if (uiManager == null || gachaManager == null) return;
+
+        // 大外のガチャパネル
+        GameObject gachaPanelObj = CreateImage(canvas.transform, "GachaPanel", Vector2.zero, new Vector2(1920, 1080));
+        gachaPanelObj.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.2f, 0.95f);
+        uiManager.gachaPanel = gachaPanelObj;
+
+        // タイトル
+        GameObject titleObj = CreateText(gachaPanelObj.transform, "GachaTitle", new Vector2(0, 400), "--- CHARACTER GACHA ---");
+        titleObj.GetComponent<TMP_Text>().fontSize = 100;
+        titleObj.GetComponent<TMP_Text>().color = Color.cyan;
+
+        // 現在のコイン数
+        GameObject coinTextObj = CreateText(gachaPanelObj.transform, "CoinText", new Vector2(0, 250), "Coins: 0");
+        TMP_Text coinTmp = coinTextObj.GetComponent<TMP_Text>();
+        coinTmp.fontSize = 80;
+        coinTmp.color = Color.yellow;
+        uiManager.coinText = coinTmp;
+
+        // キャラを引くボタン
+        GameObject drawBtnObj = CreateButton(gachaPanelObj.transform, "DrawButton", new Vector2(0, 50), new Vector2(500, 150), $"1 PULL (Cost: {gachaManager.GachaCost})");
+        Button drawBtn = drawBtnObj.GetComponent<Button>();
+
+        // 戻る（終了）ボタン
+        GameObject closeBtnObj = CreateButton(gachaPanelObj.transform, "CloseButton", new Vector2(0, -150), new Vector2(400, 100), "Close / Next");
+        Button closeBtn = closeBtnObj.GetComponent<Button>();
+
+        // === ガチャ結果パネル ===
+        GameObject resultPanelObj = CreateImage(gachaPanelObj.transform, "GachaResultPanel", Vector2.zero, new Vector2(1200, 800));
+        resultPanelObj.GetComponent<Image>().color = new Color(0, 0, 0, 0.95f);
+        uiManager.gachaResultPanel = resultPanelObj;
+
+        // 結果メッセージ
+        GameObject resTextObj = CreateText(resultPanelObj.transform, "ResultText", new Vector2(0, 300), "JOINED!");
+        TMP_Text resTmp = resTextObj.GetComponent<TMP_Text>();
+        resTmp.fontSize = 90;
+        resTmp.color = Color.magenta;
+        uiManager.gachaResultText = resTmp;
+
+        // キャラ画像
+        GameObject resImageObj = CreateImage(resultPanelObj.transform, "ResultImage", new Vector2(0, -50), new Vector2(400, 600));
+        uiManager.gachaResultImage = resImageObj.GetComponent<Image>();
+
+        // 結果を閉じるボタン
+        GameObject resCloseBtnObj = CreateButton(resultPanelObj.transform, "ResultCloseButton", new Vector2(0, -300), new Vector2(300, 80), "OK");
+        Button resCloseBtn = resCloseBtnObj.GetComponent<Button>();
+
+        // イベント設定（Editor再生時にリセットされる可能性があるため、UIManager側でも対応できるように作っているが、一応AddListenerしておく）
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(drawBtn.onClick, new UnityEngine.Events.UnityAction(gachaManager.DrawGacha));
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(closeBtn.onClick, new UnityEngine.Events.UnityAction(gachaManager.CloseGacha));
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(resCloseBtn.onClick, new UnityEngine.Events.UnityAction(uiManager.HideGachaResultPanel));
     }
 
     static GameObject CreateImage(Transform parent, string name, Vector2 position, Vector2 size)
