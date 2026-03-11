@@ -1,7 +1,7 @@
 # ゲーム仕様書 — Typing RPG
 
 > **最終更新日**: 2026-03-12
-> **バージョン**: 1.6.0
+> **バージョン**: 1.7.0
 > **プロジェクト名**: Type (Typing RPG)
 > **エンジン**: Unity (C#)
 
@@ -47,14 +47,39 @@ PC（キーボード入力必須）
 ### 2.2 ゲーム進行フロー
 
 ```
-[タイトル画面] → [バトル開始] → [リアルタイムバトル] → [勝利 or ゲームオーバー]
+[タイトル画面] → [ストーリーパート] → [バトル開始] → [リアルタイムバトル] → [勝利/ゲームオーバー] → [リザルト(コイン獲得)] → [ガチャ画面] → [タイトル画面]
 ```
 
-1. タイトル画面でボタンを押してバトルシーンに遷移
-2. バトル開始：味方4人 vs 敵1体のリアルタイムバトル
-3. プレイヤーは英単語をタイピングしてスキルを発動
-4. 敵は一定間隔で自動攻撃
-5. 敵HP=0 で勝利、味方全滅でゲームオーバー
+1. タイトル画面でボタンを押してゲームを開始
+2. ストーリー進行：戦闘前にノベルゲーム形式の会話イベントが再生される
+3. バトル開始：解放済みのキャラクターのみがパーティに編成され、敵1体とのリアルタイムバトルが開始する
+4. プレイヤーは英単語をタイピングしてスキルを発動
+5. 敵は一定間隔で自動攻撃
+6. 敵HP=0 で勝利し「Hack Coins」を100枚獲得。味方全滅でゲームオーバー
+7. リザルト画面から「ガチャ画面」へ遷移し、コインを消費して新たなキャラクターを解放できる
+
+### 2.3 ストーリー（ノベルゲーム風会話）システム
+
+- **役割**: ゲームへの没入感を高めるための戦闘前・イベント会話シーンを提供する。
+- **UI構成**: 画面全体を覆う黒半透明の「StoryPanel」に、左右のキャラクター立ち絵、画面下部のセリフウィンドウ（名前・本文）、および「スキップ(Skip)」ボタンを配置している。
+- **データ管理**: `StoryData` (ScriptableObject) を使用。複数の `StoryNode`（発言者、セリフ、画像、選択肢）で構成されるフローデータを作成し、`StoryManager` が再生処理を行う。
+- **実装されているテキスト内容（テスト版）**:
+  - `System`: 「ワード・ハッカーズの世界へようこそ。タイピングで敵を倒せ！」
+  - `GlassMan`: 「俺のスペルは「apple」「cure」「glass」だ。回復と防御はお任せあれ。」
+  - `CatGirl`: 「私は「cat」で1秒間無敵よ！危ない時は任せて！」
+  - `System`: 「さあ、バトル開始だ！」
+
+### 2.4 キャラクター解放・ガチャシステム
+
+- **プレイヤー進行管理**: `PlayerDataManager` にて、プレイヤーの所持「ハックコイン(Hack Coins)」と「解放済みキャラクター(`UnlockedCharacters`)」を `PlayerPrefs` を用いて永続保存・管理している。
+- **初期状態**: 初期は「GlassMan（ヒーラー）」1人のみが解放されている。バトルで勝利してコインを貯め、他の仲間を引き入れるシステム。
+- **編成システム**: バトル開始時（`GameManager.InitializeGame`）、解放されているキャラクターのみがパーティに編成され、UIに表示される（未解放キャラのUI枠は使用されない）。
+- **ガチャシステム**: 
+  - 勝利リザルト後に「ガチャ画面 (`GachaPanel`)」へ移動可能。
+  - **1回100コイン** を消費して `GachaManager` でガチャを引く。
+  - まだ解放していないキャラクター（Gentleman, CatGirl, YellowGirl 等）の中からランダムに1人が抽選され、仲間に加わる。
+  - 仲間になったキャラは即座に `UnlockedCharacters` に保存され、次の戦闘から自動的に編成される。
+  - 全キャラ解放済み、またはコイン不足の際にはエラーメッセージで通知される。
 
 ---
 
@@ -62,7 +87,7 @@ PC（キーボード入力必須）
 
 ### 3.1 味方パーティ
 
-- パーティ人数: **4人固定**
+- パーティ人数: **最大4人**（解放済みのキャラクターのみがバトルに参加）
 - 各キャラクターは `ScriptableObject`（`CharacterData`）で定義
 
 | パラメータ | 初期値 | 説明 |
@@ -325,7 +350,10 @@ PC（キーボード入力必須）
 | エフェクト | `blockedText` | 大技防御成功表示（BLOCKED!） |
 | エフェクト | `comboText` | コンボ発動表示（COMBO: WATER -> FREEZE!など） |
 | 終了 | `gameOverPanel` | ゲームオーバー画面（赤文字「GAME OVER」） |
-| 終了 | `victoryPanel` | 勝利画面（緑文字「VICTORY!」） |
+| 終了 | `victoryPanel` | 勝利画面（緑文字「VICTORY!」および獲得コイン数「HACK COINS +100!」表示） |
+| ストーリー | `StoryPanel` | ノベルゲーム形式の会話シーンパネル |
+| ガチャ | `GachaPanel` | ガチャUI画面（所持コイン表示、「1 PULL」ボタン、「Close」ボタン） |
+| ガチャ | `GachaResultPanel` | ガチャ結果表示画面（排出されたキャラ画像と「JOINED!」テキスト） |
 
 ### 7.3 エフェクト表現
 
@@ -379,10 +407,14 @@ PC（キーボード入力必須）
 | `Assets/Scripts/SkillDatabase.cs` | `SkillDatabase` | スキル辞書管理、スキル発動ロジック |
 | `Assets/Scripts/TypingController.cs` | `TypingController` | キーボード入力監視、スキル発動トリガー |
 | `Assets/Scripts/UIManager.cs` | `UIManager` | UI要素管理、表示更新 |
+| `Assets/Scripts/Story/StoryData.cs` | `StoryData`, `StoryNode` | ノベル会話用データ（ScriptableObject） |
+| `Assets/Scripts/Story/StoryManager.cs` | `StoryManager` | ストーリーパネルのUI制御と進行 |
+| `Assets/Scripts/System/PlayerDataManager.cs` | `PlayerDataManager` | プレイヤーデータ（HackCoins、解放キャラ）の保存と管理 |
+| `Assets/Scripts/System/GachaManager.cs` | `GachaManager` | ガチャ抽選、コイン消費、編成キャラの解放管理 |
 | `Assets/Scripts/TitleScene/Title.cs` | `Title` | タイトル画面のシーン遷移処理 |
 | `Assets/Scripts/Data/SkillSettings.cs` | `SkillSettings` | スキルパラメータ設定（ScriptableObject） |
 | `Assets/Scripts/Data/CharaConfig/CharacterData.cs` | `CharacterData` | キャラクター基本データ定義（ScriptableObject） |
-| `Assets/Scripts/Editor/SceneSetup.cs` | `SceneSetup` | エディタ用シーン自動構築ツール |
+| `Assets/Scripts/Editor/SceneSetup.cs` | `SceneSetup` | エディタ用シーン自動構築・各種パネル自動生成ツール |
 
 ### 9.2 クラス依存関係
 
@@ -499,3 +531,4 @@ Assets/
 | 2026-03-11 | 1.4.0 | サジェスト機能（インテリセンスUI）と各スキルの効果説明用辞書を追加 |
 | 2026-03-11 | 1.5.0 | 全スキルと効果を確認できるポーズ機能＋スキル辞書（Spellbook）画面を追加 |
 | 2026-03-12 | 1.6.0 | キャラクターごとの固有スキル編制の実装、新コンボシステムの追加（coldpoison等）、新規8スキルの追加 |
+| 2026-03-12 | 1.7.0 | ストーリーシステム（ノベルゲーム風会話）、プレイヤー進行機能（Hack Coins）、ガチャによるキャラクター解放システムの全体仕様を追加 |

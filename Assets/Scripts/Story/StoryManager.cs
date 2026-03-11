@@ -86,11 +86,19 @@ public class StoryManager : MonoBehaviour
             leftCharacterImage.sprite = node.leftCharacterImage;
             leftCharacterImage.gameObject.SetActive(true);
         }
+        else
+        {
+            leftCharacterImage.gameObject.SetActive(false);
+        }
         
         if (node.rightCharacterImage != null)
         {
             rightCharacterImage.sprite = node.rightCharacterImage;
             rightCharacterImage.gameObject.SetActive(true);
+        }
+        else
+        {
+            rightCharacterImage.gameObject.SetActive(false);
         }
 
         // 選択肢の処理
