@@ -24,6 +24,7 @@ public class UIManager : MonoBehaviour
     public List<GameObject> protectEffectIcons;
     public List<Image> targetHighlights;
     public List<TMP_Text> partySkillTexts;
+    public List<GameObject> partyMemberAreas;
 
     [Header("タイピングUI")]
     public TMP_Text currentInputText;
@@ -57,6 +58,16 @@ public class UIManager : MonoBehaviour
     public UnityEngine.UI.Button pauseButton;
     public UnityEngine.UI.Button resumeButton;
 
+    [Header("チュートリアル")]
+    public TMP_Text tutorialText;
+    private bool hasShownAttackTutorial = false;
+    private bool hasShownHealTutorial = false;
+    private Coroutine hideTutorialCoroutine;
+
+    [Header("ホーム画面UI")]
+    public GameObject homePanel;
+    public TMP_Text homeCoinText;
+
     [Header("ガチャ関連UI")]
     public GameObject gachaPanel;
     public TMP_Text coinText; // 現在のコイン表示
@@ -79,6 +90,7 @@ public class UIManager : MonoBehaviour
         if (skillDictionaryPanel != null) skillDictionaryPanel.SetActive(false);
         if (gachaPanel != null) gachaPanel.SetActive(false);
         if (gachaResultPanel != null) gachaResultPanel.SetActive(false);
+        if (homePanel != null) homePanel.SetActive(false);
         if (poisonEffectIcon != null) poisonEffectIcon.SetActive(false);
         if (freezeEffectIcon != null) freezeEffectIcon.SetActive(false);
         if (slowEffectIcon != null) slowEffectIcon.SetActive(false);
@@ -105,6 +117,7 @@ public class UIManager : MonoBehaviour
 
         InitializeSkillDictionaryText();
         InitializePartySkillTexts();
+        SetupPartyVisibility();
         UpdateAllUI();
     }
 
@@ -131,6 +144,28 @@ public class UIManager : MonoBehaviour
                     partySkillTexts[i].text = "";
                 }
             }
+            else
+            {
+                partySkillTexts[i].text = "";
+            }
+        }
+    }
+
+    /// <summary>
+    /// 編成済みのキャラクター枚に応じて、パーティ枚のUIを表示/非表示にする
+    /// </summary>
+    public void SetupPartyVisibility()
+    {
+        if (gameManager == null || partyMemberAreas == null) return;
+
+        int memberCount = gameManager.partyMembers.Count;
+
+        for (int i = 0; i < partyMemberAreas.Count; i++)
+        {
+            if (partyMemberAreas[i] != null)
+            {
+                partyMemberAreas[i].SetActive(i < memberCount);
+            }
         }
     }
 
@@ -144,28 +179,62 @@ public class UIManager : MonoBehaviour
 
         if (charSkills != null)
         {
-            foreach (var kvp in charSkills)
+            // 編成中のキャラのスキルのみ表示
+            foreach (var member in gameManager.partyMembers)
             {
-                string charName = kvp.Key;
-                sb.AppendLine($"<color=#00FFFF>【{charName}】</color>");
-                
-                foreach (string skill in kvp.Value)
+                if (charSkills.ContainsKey(member.name))
                 {
-                    string desc = allDesc.ContainsKey(skill) ? allDesc[skill] : "固有スキル";
-                    sb.AppendLine($"・<color=#FFFF00>{skill}</color> : {desc}");
+                    sb.AppendLine($"<color=#00FFFF>【{member.name}】</color>");
+                    foreach (string skill in charSkills[member.name])
+                    {
+                        string desc = allDesc.ContainsKey(skill) ? allDesc[skill] : "固有スキル";
+                        sb.AppendLine($"・<color=#FFFF00>{skill}</color> : {desc}");
+                    }
+                    sb.AppendLine();
                 }
-                sb.AppendLine();
-            }
-        }
-        else
-        {
-            foreach (var kvp in allDesc)
-            {
-                sb.AppendLine($"<color=#FFFF00>{kvp.Key}</color> : {kvp.Value}");
             }
         }
 
         skillDictionaryText.text = sb.ToString();
+    }
+
+    // ========================================
+    // チュートリアルテキスト
+    // ========================================
+
+    /// <summary>
+    /// 初回バトル時の攻撃チュートリアルを表示
+    /// </summary>
+    public void ShowAttackTutorial()
+    {
+        if (hasShownAttackTutorial || tutorialText == null) return;
+        hasShownAttackTutorial = true;
+        ShowTutorialMessage("「attack」とキーボードで打てば、攻撃できる！", 10f);
+    }
+
+    /// <summary>
+    /// 初回ダメージ時の回復チュートリアルを表示
+    /// </summary>
+    public void ShowHealTutorial()
+    {
+        if (hasShownHealTutorial || tutorialText == null) return;
+        hasShownHealTutorial = true;
+        ShowTutorialMessage("「apple」とキーボードで打てば、回復できる！", 15f);
+    }
+
+    void ShowTutorialMessage(string message, float duration)
+    {
+        if (tutorialText == null) return;
+        tutorialText.text = message;
+        tutorialText.gameObject.SetActive(true);
+        if (hideTutorialCoroutine != null) StopCoroutine(hideTutorialCoroutine);
+        hideTutorialCoroutine = StartCoroutine(HideTutorialAfterDelay(duration));
+    }
+
+    System.Collections.IEnumerator HideTutorialAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (tutorialText != null) tutorialText.gameObject.SetActive(false);
     }
 
     void Update()
@@ -402,6 +471,31 @@ public class UIManager : MonoBehaviour
     }
 
     // ========================================
+    // ホーム画面UI関連
+    // ========================================
+    public void ShowHomePanel()
+    {
+        if (homePanel != null) homePanel.SetActive(true);
+        if (victoryPanel != null) victoryPanel.SetActive(false);
+        if (gachaPanel != null) gachaPanel.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        UpdateHomeCoinText();
+    }
+
+    public void HideHomePanel()
+    {
+        if (homePanel != null) homePanel.SetActive(false);
+    }
+
+    public void UpdateHomeCoinText()
+    {
+        if (homeCoinText != null && PlayerDataManager.Instance != null)
+        {
+            homeCoinText.text = $"HACK COINS: {PlayerDataManager.Instance.HackCoins}";
+        }
+    }
+
+    // ========================================
     // ガチャUI関連
     // ========================================
     public void ShowGachaPanel()
@@ -411,7 +505,8 @@ public class UIManager : MonoBehaviour
             gachaPanel.SetActive(true);
             UpdateCoinText();
         }
-        if (victoryPanel != null) victoryPanel.SetActive(false); // リザルトを閉じる
+        if (victoryPanel != null) victoryPanel.SetActive(false);
+        if (homePanel != null) homePanel.SetActive(false);
     }
 
     public void HideGachaPanel()
@@ -443,9 +538,10 @@ public class UIManager : MonoBehaviour
             if (!string.IsNullOrEmpty(charaName))
             {
                 gachaResultImage.gameObject.SetActive(true);
-                // リソースのパスからSpriteを取得
+                // リソースのパスからSpriteを取得（png対応）
                 #if UNITY_EDITOR
-                Sprite spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Images/Chara/{charaName}.jpg");
+                Sprite spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Images/Chara/2/{charaName}2.png");
+                if (spr == null) spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Images/Chara/{charaName}.jpg");
                 if (spr != null) gachaResultImage.sprite = spr;
                 #endif
             }

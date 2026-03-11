@@ -108,7 +108,7 @@ public class SkillDatabase : MonoBehaviour
 
         characterSkills = new Dictionary<string, List<string>>()
         {
-            {"GlassMan", new List<string>{"apple", "supply", "protect", "cure", "glass"}},
+            {"GlassMan", new List<string>{"attack", "apple", "supply", "protect", "cure", "glass"}},
             {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock"}},
             {"CatGirl", new List<string>{"poison", "speed", "scratch", "cat"}},
             {"YellowGirl", new List<string>{"attack", "believe", "finish", "fire", "spark"}}

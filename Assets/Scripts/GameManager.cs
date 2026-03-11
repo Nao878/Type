@@ -8,10 +8,12 @@ using TMPro;
 public enum GameState
 {
     Title,
+    Home,
     Story,
     Battle,
     Result,
-    Gacha
+    Gacha,
+    Formation
 }
 
 /// <summary>
@@ -27,6 +29,7 @@ public class GameManager : MonoBehaviour
 
     [Header("キャラクター設定")]
     public List<PartyMember> partyMembers = new List<PartyMember>();
+    public List<string> currentPartyFormation = new List<string>(); // 現在のパーティ編成リスト（最大4人、戦闘中変更不可）
     public Enemy enemy;
 
     [Header("UI参照")]
@@ -92,11 +95,59 @@ public class GameManager : MonoBehaviour
     public void ChangeState(GameState newState)
     {
         currentState = newState;
-        if (newState == GameState.Title)
+        switch (newState)
         {
-            // 簡易的にシーンをリロードして初期状態に戻す
-            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            case GameState.Title:
+                UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+                break;
+            case GameState.Home:
+                uiManager?.ShowHomePanel();
+                break;
+            case GameState.Gacha:
+                uiManager?.ShowGachaPanel();
+                break;
         }
+    }
+
+    /// <summary>
+    /// ホーム画面からバトルを開始する
+    /// </summary>
+    public void GoToBattle()
+    {
+        uiManager?.HideHomePanel();
+        currentState = GameState.Story;
+
+        // ストーリーがあれば再生、なければ直接バトルへ
+        if (StoryManager.Instance != null && sampleStoryData != null)
+        {
+            // バトル開始時にパーティを再初期化
+            InitializeGame();
+            StoryManager.Instance.PlayStory(sampleStoryData);
+        }
+        else
+        {
+            InitializeGame();
+            EndStoryTransitionToBattle();
+        }
+    }
+
+    /// <summary>
+    /// ホーム画面からガチャ画面へ遷移
+    /// </summary>
+    public void GoToGacha()
+    {
+        uiManager?.HideHomePanel();
+        ChangeState(GameState.Gacha);
+    }
+
+    /// <summary>
+    /// ホーム画面へ戻る
+    /// </summary>
+    public void GoToHome()
+    {
+        isGameOver = false;
+        isVictory = false;
+        ChangeState(GameState.Home);
     }
 
     void Update()
@@ -115,17 +166,20 @@ public class GameManager : MonoBehaviour
     {
         // 味方初期化（HP 10）
         partyMembers.Clear();
+        currentPartyFormation.Clear();
 
-        // 解放済みキャラのみ編成
+        // 解放済みキャラのみ編成（最大4人）
         List<string> unlocked = new List<string> { "GlassMan" }; // 初期フォールバック
         if (PlayerDataManager.Instance != null && PlayerDataManager.Instance.UnlockedCharacters.Count > 0)
         {
             unlocked = PlayerDataManager.Instance.UnlockedCharacters;
         }
 
-        foreach (var chara in unlocked)
+        int count = Mathf.Min(unlocked.Count, 4); // 最大4人まで
+        for (int i = 0; i < count; i++)
         {
-            partyMembers.Add(new PartyMember(chara, 10));
+            partyMembers.Add(new PartyMember(unlocked[i], 10));
+            currentPartyFormation.Add(unlocked[i]);
         }
 
         // 敵の初期化（HP 50）
@@ -134,9 +188,10 @@ public class GameManager : MonoBehaviour
             enemy.Initialize(50, 2, 10f);
         }
 
-        // UI更新
+        // UI更新（パーティ表示含む）
         if (uiManager != null)
         {
+            uiManager.SetupPartyVisibility();
             uiManager.UpdateAllUI();
         }
     }
@@ -234,6 +289,9 @@ public class GameManager : MonoBehaviour
     {
         currentState = GameState.Battle;
         typingController?.EnableInput();
+
+        // 初回バトル時の攻撃チュートリアル
+        uiManager?.ShowAttackTutorial();
     }
 
     public void TogglePause()

@@ -56,7 +56,7 @@ public class GachaManager : MonoBehaviour
             // UI演出
             if (uiManager != null)
             {
-                uiManager.ShowGachaResult($"JOINED: {newChara}!", newChara);
+                uiManager.ShowGachaResult($"{newChara} RECOVERED!", newChara);
                 uiManager.UpdateCoinText(); // コイン表示の更新
             }
         }
@@ -78,13 +78,12 @@ public class GachaManager : MonoBehaviour
         if (uiManager != null)
         {
             uiManager.HideGachaPanel();
-            
-            // その後必要に応じてタイトル画面へ遷移するかをGameManagerで判断
-            // ここでは簡易的にTitleステートに戻す
-            if (gameManager != null)
-            {
-                gameManager.ChangeState(GameState.Title);
-            }
+        }
+        
+        // ホーム画面へ戻る
+        if (gameManager != null)
+        {
+            gameManager.GoToHome();
         }
     }
 }

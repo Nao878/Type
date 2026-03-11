@@ -14,7 +14,7 @@ public class SetupTestStory : MonoBehaviour
         StoryData data = ScriptableObject.CreateInstance<StoryData>();
 
 #if UNITY_EDITOR
-        Sprite glassManSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/Chara/GlassMan.jpg");
+        Sprite glassManSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/Chara/2/GlassMan2.png");
 #else
         Sprite glassManSprite = null;
 #endif

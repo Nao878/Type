@@ -164,7 +164,7 @@ public class SceneSetup : MonoBehaviour
         enemyAreaRect.sizeDelta = new Vector2(400, 300);
 
         // 敵画像
-        GameObject enemyImageObj = CreateImage(enemyArea.transform, "EnemyImage", Vector2.zero, new Vector2(200, 200));
+        GameObject enemyImageObj = CreateImage(enemyArea.transform, "EnemyImage", Vector2.zero, new Vector2(280, 280));
         uiManager.enemyImage = enemyImageObj.GetComponent<Image>();
         
         // 敵画像のSprite読み込み試行
@@ -208,12 +208,13 @@ public class SceneSetup : MonoBehaviour
         uiManager.protectEffectIcons = new System.Collections.Generic.List<GameObject>();
         uiManager.targetHighlights = new System.Collections.Generic.List<Image>();
         uiManager.partySkillTexts = new System.Collections.Generic.List<TMP_Text>();
+        uiManager.partyMemberAreas = new System.Collections.Generic.List<GameObject>();
 
         string[] characterImages = {
-            "Assets/Images/Chara/GlassMan.jpg",
-            "Assets/Images/Chara/Gentleman.jpg",
-            "Assets/Images/Chara/CatGirl.jpg",
-            "Assets/Images/Chara/YellowGirl.jpg"
+            "Assets/Images/Chara/2/GlassMan2.png",
+            "Assets/Images/Chara/2/GentleMan2.png",
+            "Assets/Images/Chara/2/CatGirl2.png",
+            "Assets/Images/Chara/2/YellowGirl2.png"
         };
 
         for (int i = 0; i < 4; i++)
@@ -223,16 +224,17 @@ public class SceneSetup : MonoBehaviour
             GameObject partyMemberArea = new GameObject($"PartyMember{i + 1}");
             partyMemberArea.transform.SetParent(canvas.transform);
             RectTransform partyRect = partyMemberArea.AddComponent<RectTransform>();
-            partyRect.anchoredPosition = new Vector2(xPos, -200); // -300 -> -200
-            partyRect.sizeDelta = new Vector2(200, 250);
+            partyRect.anchoredPosition = new Vector2(xPos, -200);
+            partyRect.sizeDelta = new Vector2(250, 300);
+            uiManager.partyMemberAreas.Add(partyMemberArea);
 
             // ターゲットハイライト
-            GameObject highlight = CreateImage(partyMemberArea.transform, "TargetHighlight", Vector2.zero, new Vector2(160, 160));
+            GameObject highlight = CreateImage(partyMemberArea.transform, "TargetHighlight", Vector2.zero, new Vector2(210, 210));
             highlight.GetComponent<Image>().color = new Color(1f, 0f, 0f, 0.3f);
             uiManager.targetHighlights.Add(highlight.GetComponent<Image>());
 
-            // キャラ画像
-            GameObject charImageObj = CreateImage(partyMemberArea.transform, "CharImage", Vector2.zero, new Vector2(150, 150));
+            // キャラ画像（拡大）
+            GameObject charImageObj = CreateImage(partyMemberArea.transform, "CharImage", Vector2.zero, new Vector2(200, 200));
             Image charImage = charImageObj.GetComponent<Image>();
             uiManager.partyMemberImages.Add(charImage);
 
@@ -353,13 +355,14 @@ public class SceneSetup : MonoBehaviour
         vCoinTmp.color = Color.yellow;
         uiManager.victoryCoinText = vCoinTmp;
 
-        GameObject toGachaBtnObj = CreateButton(victoryPanel.transform, "ToGachaBtn", new Vector2(0, -150), new Vector2(400, 100), "To Gacha");
-        // エディタスクリプトからのイベント登録は実行時に消える可能性があるが、
-        // 簡易実装としてGachaPanelへの遷移をGameManager経由か動的登録させる。
-        // ここではGachaManager等に依存しないように直接設定するよりも実行時にUIManager等でAddListenerすべきだが
-        // 現行の作りに合わせてSceneSetupでAddListenerを試みる。（後でUIManagerのStartで再設定が必要かも）
+        GameObject toHomeBtnObj = CreateButton(victoryPanel.transform, "ToHomeBtn", new Vector2(0, -150), new Vector2(400, 100), "HOME");
+        Button toHomeBtn = toHomeBtnObj.GetComponent<Button>();
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(toHomeBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.GoToHome));
 
         uiManager.victoryPanel = victoryPanel;
+
+        // === HomePanelの作成 ===
+        SetupHomeUI(canvas, uiManager, gameManager);
 
         // === GachaPanelの作成 ===
         SetupGachaUI(canvas, uiManager, gachaManager);
@@ -412,6 +415,18 @@ public class SceneSetup : MonoBehaviour
         comboTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
         comboTextObj.SetActive(false);
         uiManager.comboText = comboTmp;
+
+        // === チュートリアルテキスト ===
+        GameObject tutorialTextObj = CreateText(canvas.transform, "TutorialText", new Vector2(0, 350), "");
+        TMP_Text tutorialTmp = tutorialTextObj.GetComponent<TMP_Text>();
+        tutorialTmp.fontSize = 72;
+        tutorialTmp.color = new Color(0.3f, 1f, 0.3f); // 緑色
+        tutorialTmp.fontStyle = FontStyles.Bold;
+        tutorialTmp.alignment = TextAlignmentOptions.Center;
+        tutorialTmp.enableWordWrapping = true;
+        tutorialTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(1400, 200);
+        tutorialTextObj.SetActive(false);
+        uiManager.tutorialText = tutorialTmp;
 
         // === Pause / Spellbook ボタン ===
         GameObject spellbookObj = CreateButton(canvas.transform, "SpellbookButton", new Vector2(800, 480), new Vector2(160, 60), "Spellbook");
@@ -535,6 +550,55 @@ public class SceneSetup : MonoBehaviour
         dictPanel.SetActive(false);
     }
 
+    static void SetupHomeUI(Canvas canvas, UIManager uiManager, GameManager gameManager)
+    {
+        if (uiManager == null || gameManager == null) return;
+
+        // ホームパネル（全画面）
+        GameObject homePanelObj = CreateImage(canvas.transform, "HomePanel", Vector2.zero, new Vector2(1920, 1080));
+        homePanelObj.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.15f, 0.97f);
+        uiManager.homePanel = homePanelObj;
+
+        // タイトルテキスト
+        GameObject titleObj = CreateText(homePanelObj.transform, "HomeTitle", new Vector2(0, 350), "WORD HACKERS");
+        TMP_Text titleTmp = titleObj.GetComponent<TMP_Text>();
+        titleTmp.fontSize = 120;
+        titleTmp.color = Color.cyan;
+        titleTmp.fontStyle = FontStyles.Bold;
+
+        // サブタイトル
+        GameObject subObj = CreateText(homePanelObj.transform, "HomeSubtitle", new Vector2(0, 250), "- Typing RPG -");
+        TMP_Text subTmp = subObj.GetComponent<TMP_Text>();
+        subTmp.fontSize = 56;
+        subTmp.color = new Color(0.7f, 0.7f, 0.9f);
+
+        // コイン表示
+        GameObject coinObj = CreateText(homePanelObj.transform, "HomeCoinText", new Vector2(0, 130), "HACK COINS: 0");
+        TMP_Text coinTmp = coinObj.GetComponent<TMP_Text>();
+        coinTmp.fontSize = 64;
+        coinTmp.color = Color.yellow;
+        uiManager.homeCoinText = coinTmp;
+
+        // BATTLE STARTボタン
+        GameObject battleBtnObj = CreateButton(homePanelObj.transform, "BattleStartBtn", new Vector2(0, 0), new Vector2(600, 120), "BATTLE START");
+        Button battleBtn = battleBtnObj.GetComponent<Button>();
+        battleBtnObj.GetComponent<Image>().color = new Color(0.1f, 0.5f, 0.2f);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(battleBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.GoToBattle));
+
+        // DECODE（ガチャ）ボタン
+        GameObject gachaBtnObj = CreateButton(homePanelObj.transform, "DecodeBtn", new Vector2(0, -160), new Vector2(600, 120), "DECODE (GACHA)");
+        Button gachaBtn = gachaBtnObj.GetComponent<Button>();
+        gachaBtnObj.GetComponent<Image>().color = new Color(0.4f, 0.1f, 0.5f);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(gachaBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.GoToGacha));
+
+        // FORMATION（編成）ボタン ※現在は空パネルを開くのみ
+        GameObject formBtnObj = CreateButton(homePanelObj.transform, "FormationBtn", new Vector2(0, -320), new Vector2(600, 120), "FORMATION");
+        formBtnObj.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.4f);
+        // 将来的に編成画面を開くが、現時点では機能なし
+
+        homePanelObj.SetActive(false); // 初期は非表示
+    }
+
     static void SetupStoryUI(Canvas canvas, StoryManager storyManager)
     {
         if (storyManager == null) return;
@@ -556,13 +620,13 @@ public class SceneSetup : MonoBehaviour
         bgRect.sizeDelta = Vector2.zero;
         bgObj.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 1f);
 
-        // 立ち絵（左）
-        GameObject leftChar = CreateImage(storyPanelObj.transform, "LeftCharacter", new Vector2(-500, 100), new Vector2(400, 600));
-        leftChar.SetActive(false); // 初期は非表示
+        // 立ち絵（左）— 正方形比率（1:1）
+        GameObject leftChar = CreateImage(storyPanelObj.transform, "LeftCharacter", new Vector2(-500, 100), new Vector2(400, 400));
+        leftChar.SetActive(false);
         storyManager.leftCharacterImage = leftChar.GetComponent<Image>();
 
-        // 立ち絵（右）
-        GameObject rightChar = CreateImage(storyPanelObj.transform, "RightCharacter", new Vector2(500, 100), new Vector2(400, 600));
+        // 立ち絵（右）— 正方形比率（1:1）
+        GameObject rightChar = CreateImage(storyPanelObj.transform, "RightCharacter", new Vector2(500, 100), new Vector2(400, 400));
         rightChar.SetActive(false); // 初期は非表示
         storyManager.rightCharacterImage = rightChar.GetComponent<Image>();
 
@@ -655,8 +719,8 @@ public class SceneSetup : MonoBehaviour
         GameObject drawBtnObj = CreateButton(gachaPanelObj.transform, "DrawButton", new Vector2(0, 50), new Vector2(500, 150), $"1 PULL (Cost: {gachaManager.GachaCost})");
         Button drawBtn = drawBtnObj.GetComponent<Button>();
 
-        // 戻る（終了）ボタン
-        GameObject closeBtnObj = CreateButton(gachaPanelObj.transform, "CloseButton", new Vector2(0, -150), new Vector2(400, 100), "Close / Next");
+        // 戻る（ホームへ）ボタン
+        GameObject closeBtnObj = CreateButton(gachaPanelObj.transform, "CloseButton", new Vector2(0, -150), new Vector2(400, 100), "BACK");
         Button closeBtn = closeBtnObj.GetComponent<Button>();
 
         // === ガチャ結果パネル ===

@@ -100,6 +100,9 @@ public class Enemy : MonoBehaviour
             return;
         }
 
+        // バトル中以外は敵の行動を停止する（ストーリー、ホーム、ガチャ等）
+        if (gameManager.currentState != GameState.Battle) return;
+
         CheckEnrageMode();
         UpdateStatusEffects();
         UpdateAttackTimer();
@@ -289,6 +292,9 @@ public class Enemy : MonoBehaviour
         target.TakeDamage(damage);
         gameManager.uiManager?.UpdateAllUI();
         gameManager.uiManager?.ShowDamageEffect(gameManager.partyMembers.IndexOf(target));
+
+        // 初回ダメージ時の回復チュートリアル
+        gameManager.uiManager?.ShowHealTutorial();
     }
 
     float GetRandomAttackInterval()
