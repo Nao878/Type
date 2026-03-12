@@ -14,9 +14,14 @@ public class PlayerDataManager : MonoBehaviour
     public List<string> UnlockedCharacters { get; private set; } = new List<string>();
     public List<string> PartyFormation { get; private set; } = new List<string>();
 
+    public bool HasSeenTutorialStory1 { get; private set; }
+    public bool HasSeenTutorialStory2 { get; private set; }
+
     private const string COIN_KEY = "HackCoins";
     private const string CHARA_KEY = "UnlockedCharacters";
     private const string FORMATION_KEY = "PartyFormation";
+    private const string STORY1_KEY = "HasSeenTutorialStory1";
+    private const string STORY2_KEY = "HasSeenTutorialStory2";
 
     void Awake()
     {
@@ -58,6 +63,9 @@ public class PlayerDataManager : MonoBehaviour
             // 解放済みに存在しないキャラを除外
             PartyFormation = PartyFormation.Where(c => UnlockedCharacters.Contains(c)).ToList();
         }
+
+        HasSeenTutorialStory1 = PlayerPrefs.GetInt(STORY1_KEY, 0) == 1;
+        HasSeenTutorialStory2 = PlayerPrefs.GetInt(STORY2_KEY, 0) == 1;
     }
 
     public void SaveData()
@@ -65,6 +73,8 @@ public class PlayerDataManager : MonoBehaviour
         PlayerPrefs.SetInt(COIN_KEY, HackCoins);
         PlayerPrefs.SetString(CHARA_KEY, string.Join(",", UnlockedCharacters));
         PlayerPrefs.SetString(FORMATION_KEY, string.Join(",", PartyFormation));
+        PlayerPrefs.SetInt(STORY1_KEY, HasSeenTutorialStory1 ? 1 : 0);
+        PlayerPrefs.SetInt(STORY2_KEY, HasSeenTutorialStory2 ? 1 : 0);
         PlayerPrefs.Save();
     }
 
@@ -98,6 +108,18 @@ public class PlayerDataManager : MonoBehaviour
     public void SavePartyFormation(List<string> formation)
     {
         PartyFormation = new List<string>(formation);
+        SaveData();
+    }
+
+    public void MarkTutorialStory1Seen()
+    {
+        HasSeenTutorialStory1 = true;
+        SaveData();
+    }
+
+    public void MarkTutorialStory2Seen()
+    {
+        HasSeenTutorialStory2 = true;
         SaveData();
     }
 

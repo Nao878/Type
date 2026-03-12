@@ -29,6 +29,7 @@ public class StoryManager : MonoBehaviour
     public bool isStoryActive = false;
     private StoryData currentStoryData;
     private int currentNodeIndex = 0;
+    private Action onStoryComplete;
 
     void Awake()
     {
@@ -47,8 +48,10 @@ public class StoryManager : MonoBehaviour
     /// <summary>
     /// ストーリーの再生を開始する
     /// </summary>
-    public void PlayStory(StoryData storyData)
+    public void PlayStory(StoryData storyData, Action onComplete = null)
     {
+        onStoryComplete = onComplete;
+
         if (storyData == null || storyData.nodes.Count == 0)
         {
             EndStory();
@@ -178,10 +181,20 @@ public class StoryManager : MonoBehaviour
         isStoryActive = false;
         HideStoryUI();
 
-        // GameManagerに通知してBattleへ移行する
-        if (GameManager.Instance != null)
+        // 登録されたコールバックがあれば実行
+        if (onStoryComplete != null)
         {
-            GameManager.Instance.EndStoryTransitionToBattle();
+            Action callback = onStoryComplete;
+            onStoryComplete = null;
+            callback.Invoke();
+        }
+        else
+        {
+            // コールバックがない場合はデフォルトでGameManagerを通じてBattleへ移行する（後方互換）
+            if (GameManager.Instance != null && GameManager.Instance.currentState == GameState.Story)
+            {
+                GameManager.Instance.EndStoryTransitionToBattle();
+            }
         }
     }
 

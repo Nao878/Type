@@ -43,7 +43,9 @@ public class GameManager : MonoBehaviour
     public bool isPaused = false;
     
     [Header("ストーリー参照")]
-    public StoryData sampleStoryData;
+    public StoryData sampleStoryData; // 過去互換用
+    public StoryData tutorialStory1; // 開始直後用
+    public StoryData tutorialStory2; // 初回クリア時用
 
     // バフ状態管理
     public bool isBuffActive = false;
@@ -63,6 +65,10 @@ public class GameManager : MonoBehaviour
     public bool isSparkActive = false;
     public float sparkMultiplier = 1.5f;
 
+    [Header("持続系スキル管理")]
+    public float activeTurretTimer = 0f;
+    public float activeRegenTimer = 0f;
+
     void Awake()
     {
         if (Instance == null)
@@ -77,18 +83,29 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        currentState = GameState.Story;
         InitializeGame();
         
-        // テスト用：開始直後にストーリーを流す
-        if (StoryManager.Instance != null && sampleStoryData != null)
+        // チュートリアル進行状況の確認
+        if (PlayerDataManager.Instance != null && !PlayerDataManager.Instance.HasSeenTutorialStory1 && tutorialStory1 != null)
         {
-            StoryManager.Instance.PlayStory(sampleStoryData);
+            // 初回起動時：ストーリー1を再生してからバトルへ
+            currentState = GameState.Story;
+            if (StoryManager.Instance != null)
+            {
+                StoryManager.Instance.PlayStory(tutorialStory1, () => {
+                    PlayerDataManager.Instance.MarkTutorialStory1Seen();
+                    EndStoryTransitionToBattle();
+                });
+            }
+            else
+            {
+                EndStoryTransitionToBattle();
+            }
         }
         else
         {
-            // ストーリーデータがない場合はそのままバトルへ
-            EndStoryTransitionToBattle();
+            // チュートリアル1閲覧済み：直接ホーム画面からゲームを開始
+            GoToHome();
         }
     }
 
@@ -109,26 +126,11 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// ホーム画面からバトルを開始する
-    /// </summary>
     public void GoToBattle()
     {
         uiManager?.HideHomePanel();
-        currentState = GameState.Story;
-
-        // ストーリーがあれば再生、なければ直接バトルへ
-        if (StoryManager.Instance != null && sampleStoryData != null)
-        {
-            // バトル開始時にパーティを再初期化
-            InitializeGame();
-            StoryManager.Instance.PlayStory(sampleStoryData);
-        }
-        else
-        {
-            InitializeGame();
-            EndStoryTransitionToBattle();
-        }
+        InitializeGame();
+        EndStoryTransitionToBattle();
     }
 
     /// <summary>
@@ -148,6 +150,64 @@ public class GameManager : MonoBehaviour
         isGameOver = false;
         isVictory = false;
         ChangeState(GameState.Home);
+    }
+
+    // === 持続系・新スキル追加メソッド ===
+
+    public void ActivateTurret()
+    {
+        activeTurretTimer = 10f;
+        StartCoroutine(TurretCoroutine());
+    }
+
+    IEnumerator TurretCoroutine()
+    {
+        float elapsed = 0f;
+        while (elapsed < 10f)
+        {
+            yield return new WaitForSeconds(1f);
+            elapsed += 1f;
+            if (enemy != null && !isGameOver && !isVictory)
+            {
+                enemy.TakeDamage(1); 
+                Debug.Log("Turret deals 1 damage to enemy.");
+            }
+        }
+    }
+
+    public void ActivateRegen()
+    {
+        activeRegenTimer = 10f;
+        StartCoroutine(RegenCoroutine());
+    }
+
+    IEnumerator RegenCoroutine()
+    {
+        float elapsed = 0f;
+        while (elapsed < 10f)
+        {
+            yield return new WaitForSeconds(2f);
+            elapsed += 2f;
+            if (!isGameOver && !isVictory)
+            {
+                foreach (var member in partyMembers)
+                {
+                    if (member.currentHP > 0) member.Heal(1);
+                }
+                Debug.Log("Regen heals party members by 1.");
+            }
+        }
+    }
+
+    public void ActivateGlass() { glassBarrierActive = true; glassReflectDamage = 1; StartCoroutine(DeactivateBuffAfterDelay(() => glassBarrierActive = false, 10f)); }
+    public void ActivateSpark() { isSparkActive = true; StartCoroutine(DeactivateBuffAfterDelay(() => isSparkActive = false, 10f)); }
+    public void ActivateTrick() { if (enemy != null) enemy.DetermineNextTarget(); }
+    public void ActivateClock() { if (enemy != null) enemy.attackTimer = Mathf.Min(enemy.baseAttackInterval, enemy.attackTimer + 3f); }
+
+    IEnumerator DeactivateBuffAfterDelay(System.Action onEnd, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        onEnd?.Invoke();
     }
 
     void Update()
@@ -210,6 +270,21 @@ public class GameManager : MonoBehaviour
 
     void UpdateBuffTimers()
     {
+        float deltaTime = Time.deltaTime;
+
+        // 持続系スキルタイマーの更新
+        if (activeTurretTimer > 0)
+        {
+            activeTurretTimer -= deltaTime;
+            if (activeTurretTimer < 0) activeTurretTimer = 0;
+        }
+
+        if (activeRegenTimer > 0)
+        {
+            activeRegenTimer -= deltaTime;
+            if (activeRegenTimer < 0) activeRegenTimer = 0;
+        }
+
         // 攻撃バフ
         if (isBuffActive)
         {
@@ -234,10 +309,11 @@ public class GameManager : MonoBehaviour
             uiManager?.UpdateBuffDisplay("speed", speedBuffTimer);
         }
 
-        // 各キャラの無敵時間更新
+        // 各キャラの無敵時間とクールダウン更新
         foreach (var member in partyMembers)
         {
             member.UpdateInvincibility(Time.deltaTime);
+            member.UpdateCooldown(Time.deltaTime);
         }
     }
 
@@ -270,24 +346,46 @@ public class GameManager : MonoBehaviour
     public void Victory()
     {
         isVictory = true;
-        currentState = GameState.Result;
-
-        // ハックコインを付与（例：100コイン）
-        int earnedCoins = 100;
-        if (PlayerDataManager.Instance != null)
-        {
-            PlayerDataManager.Instance.AddCoins(earnedCoins);
-            Debug.Log($"ハックコインを獲得しました: {earnedCoins}枚");
-        }
-
-        // 引数付きでUIManagerへ渡す
-        // UI側で修正が必要な場合は後ほどUIManagerの変更で行う
-        if (uiManager != null)
-        {
-            uiManager.ShowVictory(earnedCoins);
-        }
-
         typingController?.DisableInput();
+
+        if (PlayerDataManager.Instance != null && !PlayerDataManager.Instance.HasSeenTutorialStory2 && tutorialStory2 != null)
+        {
+            // 初回クリア時：ストーリー2を再生し、終了後にホーム画面へ
+            currentState = GameState.Story;
+            if (StoryManager.Instance != null)
+            {
+                StoryManager.Instance.PlayStory(tutorialStory2, () => {
+                    int earnedCoins = 100;
+                    PlayerDataManager.Instance.AddCoins(earnedCoins);
+                    PlayerDataManager.Instance.MarkTutorialStory2Seen();
+                    Debug.Log($"初回クリアボーナス。ハックコインを獲得しました: {earnedCoins}枚");
+                    // 強制的にホーム画面へ
+                    GoToHome();
+                });
+            }
+            else
+            {
+                PlayerDataManager.Instance.AddCoins(100);
+                PlayerDataManager.Instance.MarkTutorialStory2Seen();
+                GoToHome();
+            }
+        }
+        else
+        {
+            // 通常クリア時リザルト処理
+            currentState = GameState.Result;
+            int earnedCoins = 100;
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.AddCoins(earnedCoins);
+                Debug.Log($"ハックコインを獲得しました: {earnedCoins}枚");
+            }
+
+            if (uiManager != null)
+            {
+                uiManager.ShowVictory(earnedCoins);
+            }
+        }
     }
 
     public void GameOver()
@@ -420,11 +518,16 @@ public class PartyMember
     public bool isInvincible = false;
     public float invincibilityTimer = 0f;
 
+    [Header("クールダウン関連")]
+    public float currentCooldown = 0f;
+    public float maxCooldown = 3.0f; // デフォルト3秒
+
     public PartyMember(string name, int maxHP)
     {
         this.name = name;
         this.maxHP = maxHP;
         this.currentHP = maxHP;
+        this.currentCooldown = 0f;
     }
 
     public void Heal(int amount)
@@ -453,6 +556,18 @@ public class PartyMember
             {
                 isInvincible = false;
                 invincibilityTimer = 0f;
+            }
+        }
+    }
+
+    public void UpdateCooldown(float deltaTime)
+    {
+        if (currentCooldown > 0f)
+        {
+            currentCooldown -= deltaTime;
+            if (currentCooldown < 0f)
+            {
+                currentCooldown = 0f;
             }
         }
     }

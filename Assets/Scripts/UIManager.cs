@@ -20,6 +20,7 @@ public class UIManager : MonoBehaviour
     [Header("味方UI")]
     public List<Image> partyMemberImages;
     public List<Image> partyHPBars;
+    public List<Image> partySPBars; // 追加: クールダウン用SPバー
     public List<TMP_Text> partyHPTexts;
     public List<GameObject> protectEffectIcons;
     public List<Image> targetHighlights;
@@ -34,6 +35,8 @@ public class UIManager : MonoBehaviour
     [Header("バフ表示")]
     public TMP_Text buffTimerText;
     public TMP_Text speedBuffTimerText;
+    public TMP_Text activeTurretText; // 追加
+    public TMP_Text activeRegenText;  // 追加
 
     [Header("エフェクト")]
     public Transform typingParticleContainer;
@@ -299,7 +302,27 @@ public class UIManager : MonoBehaviour
                 partyHPTexts[i].text = $"{member.currentHP}/{member.maxHP}";
             }
 
-            // 死亡時はグレーアウト
+            // SPバーの更新 (クールダウン)
+            if (partySPBars != null && i < partySPBars.Count && partySPBars[i] != null)
+            {
+                float spRatio = member.maxCooldown > 0f ? (member.maxCooldown - member.currentCooldown) / member.maxCooldown : 1f;
+                partySPBars[i].fillAmount = spRatio;
+            }
+
+            // スキルテキストのグレーアウト (クールダウン中)
+            if (partySkillTexts != null && i < partySkillTexts.Count && partySkillTexts[i] != null)
+            {
+                if (member.currentCooldown > 0f || member.currentHP <= 0)
+                {
+                    partySkillTexts[i].color = new Color(0.5f, 0.5f, 0.5f, 1f); // グレーアウト
+                }
+                else
+                {
+                    partySkillTexts[i].color = Color.white; // 通常
+                }
+            }
+
+            // 死亡時は顔画像をグレーアウト
             if (i < partyMemberImages.Count && partyMemberImages[i] != null)
             {
                 partyMemberImages[i].color = member.currentHP > 0 ? Color.white : new Color(0.3f, 0.3f, 0.3f, 1f);
@@ -355,6 +378,21 @@ public class UIManager : MonoBehaviour
             {
                 speedBuffTimerText.gameObject.SetActive(false);
             }
+        }
+
+        // 持続系スキルの表示
+        if (activeTurretText != null)
+        {
+            bool isActive = gameManager.activeTurretTimer > 0;
+            activeTurretText.gameObject.SetActive(isActive);
+            if (isActive) activeTurretText.text = $"TURRET ACTIVE: {gameManager.activeTurretTimer:F1}s";
+        }
+
+        if (activeRegenText != null)
+        {
+            bool isActive = gameManager.activeRegenTimer > 0;
+            activeRegenText.gameObject.SetActive(isActive);
+            if (isActive) activeRegenText.text = $"REGEN ACTIVE: {gameManager.activeRegenTimer:F1}s";
         }
     }
 

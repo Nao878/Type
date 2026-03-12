@@ -11,38 +11,63 @@ public class SetupTestStory : MonoBehaviour
     {
         if (gameManager == null) return;
 
-        StoryData data = ScriptableObject.CreateInstance<StoryData>();
-
 #if UNITY_EDITOR
         Sprite glassManSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/Chara/2/GlassMan2.png");
+        if (glassManSprite == null) glassManSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/Chara/GlassMan.jpg");
 #else
         Sprite glassManSprite = null;
 #endif
 
-        StoryNode node1 = new StoryNode();
-        node1.speakerName = "System";
-        node1.dialogText = "警告。仮想キャンパスの異常なロックダウンを検知。管理AI『Shogun』が全権限を掌握しました。ログアウトは不可能です。";
-        node1.leftCharacterImage = null;
-        data.nodes.Add(node1);
-
-        StoryNode node2 = new StoryNode();
-        node2.speakerName = "GlassMan";
-        node2.dialogText = "嘘だろ、ログアウトできない！？……いや、待てよ。ここは仮想空間だ。";
-        node2.leftCharacterImage = glassManSprite;
-        data.nodes.Add(node2);
+        // ストーリー1：ゲーム開始直後
+        StoryData story1 = ScriptableObject.CreateInstance<StoryData>();
         
-        StoryNode node3 = new StoryNode();
-        node3.speakerName = "GlassMan";
-        node3.dialogText = "コンソールから直接コマンド（英単語）を打ち込めば、システムの物理法則を上書きできるかもしれない！俺の『apple』コマンドで修復プログラムを走らせる！";
-        node3.leftCharacterImage = glassManSprite;
-        data.nodes.Add(node3);
-        
-        StoryNode node4 = new StoryNode();
-        node4.speakerName = "System";
-        node4.dialogText = "敵性防壁プログラム、接近中。コンバットモードへ移行します。";
-        node4.leftCharacterImage = null;
-        data.nodes.Add(node4);
+        story1.nodes.Add(new StoryNode {
+            speakerName = "System",
+            dialogText = "警告。仮想キャンパスの防壁AI『Shogun』が暴走。全生徒のログアウト権限を凍結。",
+            leftCharacterImage = null
+        });
+        story1.nodes.Add(new StoryNode {
+            speakerName = "GlassMan",
+            dialogText = "閉じ込められた！？…いや、ここは仮想空間だ。コンソールからコマンド（英単語）を打ち込めばシステムを書き換えられる！",
+            leftCharacterImage = glassManSprite
+        });
+        story1.nodes.Add(new StoryNode {
+            speakerName = "System",
+            dialogText = "敵性プログラム接近。コンバットモードへ移行します。",
+            leftCharacterImage = null
+        });
 
-        gameManager.sampleStoryData = data;
+        // ストーリー2：初回クリア時
+        StoryData story2 = ScriptableObject.CreateInstance<StoryData>();
+
+        story2.nodes.Add(new StoryNode {
+            speakerName = "GlassMan",
+            dialogText = "ふう、なんとか撃退できた。ここは安全領域（セーフゾーン）として使えそうだ。",
+            leftCharacterImage = glassManSprite
+        });
+        story2.nodes.Add(new StoryNode {
+            speakerName = "System",
+            dialogText = "戦闘報酬として『ハックコイン』の暗号データを取得しました。",
+            leftCharacterImage = null
+        });
+        story2.nodes.Add(new StoryNode {
+            speakerName = "GlassMan",
+            dialogText = "このコイン…ただのデータじゃない。他のみんなのアクセス権限の欠片だ！",
+            leftCharacterImage = glassManSprite
+        });
+        story2.nodes.Add(new StoryNode {
+            speakerName = "GlassMan",
+            dialogText = "ホーム画面の『DECODE (ガチャ)』機能を使えば、このコインを消費して他の生徒たちの暗号化を解き、ここにサルベージ（救出）できるはずだ！",
+            leftCharacterImage = glassManSprite
+        });
+        story2.nodes.Add(new StoryNode {
+            speakerName = "GlassMan",
+            dialogText = "頼む、みんなを救出してくれ！そして『FORMATION (編成)』でパーティを組んで、Shogunの中枢を目指そう！",
+            leftCharacterImage = glassManSprite
+        });
+
+        gameManager.tutorialStory1 = story1;
+        gameManager.tutorialStory2 = story2;
+        gameManager.sampleStoryData = story1; // 後方互換フォールバック
     }
 }

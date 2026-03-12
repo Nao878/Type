@@ -210,6 +210,7 @@ public class SceneSetup : MonoBehaviour
         // === 味方エリア（下部）===
         uiManager.partyMemberImages = new System.Collections.Generic.List<Image>();
         uiManager.partyHPBars = new System.Collections.Generic.List<Image>();
+        uiManager.partySPBars = new System.Collections.Generic.List<Image>(); // SPバー用追加
         uiManager.partyHPTexts = new System.Collections.Generic.List<TMP_Text>();
         uiManager.protectEffectIcons = new System.Collections.Generic.List<GameObject>();
         uiManager.targetHighlights = new System.Collections.Generic.List<Image>();
@@ -269,8 +270,22 @@ public class SceneSetup : MonoBehaviour
             hpBar.fillMethod = Image.FillMethod.Horizontal;
             uiManager.partyHPBars.Add(hpBar);
 
-            // HPテキスト
-            GameObject hpTextObj = CreateText(partyMemberArea.transform, "HPText", new Vector2(0, -125), "10/10");
+            // SPバー背景 (HPバーの下に配置)
+            GameObject spBg = CreateImage(partyMemberArea.transform, "SPBarBg", new Vector2(0, -115), new Vector2(280, 10));
+            spBg.GetComponent<Image>().color = Color.gray;
+
+            // SPバー
+            GameObject spBarObj = CreateImage(partyMemberArea.transform, "SPBar", new Vector2(0, -115), new Vector2(280, 10));
+            Image spBar = spBarObj.GetComponent<Image>();
+            spBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            spBar.color = Color.cyan;
+            spBar.type = Image.Type.Filled;
+            spBar.fillMethod = Image.FillMethod.Horizontal;
+            spBar.fillAmount = 1f; // 初期値フル
+            uiManager.partySPBars.Add(spBar);
+
+            // HPテキスト (位置を下げる)
+            GameObject hpTextObj = CreateText(partyMemberArea.transform, "HPText", new Vector2(0, -145), "10/10");
             uiManager.partyHPTexts.Add(hpTextObj.GetComponent<TMP_Text>());
 
             // スキルカンペテキスト
@@ -388,6 +403,15 @@ public class SceneSetup : MonoBehaviour
         critTextRect.sizeDelta = new Vector2(1600, 400);
         criticalTextObj.SetActive(false);
         uiManager.criticalText = critText;
+
+        // === 持続系スキルバフ表示 ===
+        GameObject turretTimerObj = CreateText(canvas.transform, "TurretTimerText", new Vector2(500, 350), "");
+        uiManager.activeTurretText = turretTimerObj.GetComponent<TMP_Text>();
+        turretTimerObj.SetActive(false);
+
+        GameObject regenTimerObj = CreateText(canvas.transform, "RegenTimerText", new Vector2(500, 300), "");
+        uiManager.activeRegenText = regenTimerObj.GetComponent<TMP_Text>();
+        regenTimerObj.SetActive(false);
 
         // === 大技・発狂演出テキスト ===
         GameObject dangerTextObj = CreateText(enemyArea.transform, "DangerText", new Vector2(0, 100), "DANGER");
@@ -887,6 +911,14 @@ public class SceneSetup : MonoBehaviour
         tmp.color = Color.white;
 
         return obj;
+    }
+
+    [MenuItem("TypingRPG/Reset PlayerPrefs")]
+    public static void ResetPlayerPrefs()
+    {
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        Debug.Log("PlayerPrefs has been reset.");
     }
 #endif
 }

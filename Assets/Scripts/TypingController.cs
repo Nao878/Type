@@ -46,8 +46,8 @@ public class TypingController : MonoBehaviour
             // 入力確定時にスキル発動をチェック
             TryActivateSkill();
         }
-        // 通常文字（アルファベットのみ）
-        else if (char.IsLetter(c))
+        // 通常文字（アルファベット）またはピリオド
+        else if (char.IsLetter(c) || c == '.')
         {
             currentInput += char.ToLower(c);
 
