@@ -69,10 +69,7 @@ public class SkillDatabase : MonoBehaviour
             {"fire", SkillFire},
             {"spark", SkillSpark},
             {"turret", SkillTurret},
-            {"regen", SkillRegen},
-            {"attack.max", SkillAttackMax},
-            {"apple.all", SkillAppleAll},
-            {"stop.long", SkillStopLong}
+            {"regen", SkillRegen}
         };
 
         skillDescriptions = new Dictionary<string, string>()
@@ -108,18 +105,15 @@ public class SkillDatabase : MonoBehaviour
             {"fire", "3ダメ+火傷"},
             {"spark", "次弾1.5倍"},
             {"turret", "自動攻撃"},
-            {"regen", "全体リジェネ"},
-            {"attack.max", "確定5ダメ"},
-            {"apple.all", "全体2回復"},
-            {"stop.long", "20秒遅延"}
+            {"regen", "全体リジェネ"}
         };
 
         characterSkills = new Dictionary<string, List<string>>()
         {
-            {"GlassMan", new List<string>{"attack", "apple", "supply", "protect", "cure", "glass", "regen", "apple.all"}},
-            {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock", "stop.long"}},
+            {"GlassMan", new List<string>{"attack", "apple", "supply", "protect", "cure", "glass", "regen"}},
+            {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock"}},
             {"CatGirl", new List<string>{"poison", "speed", "scratch", "cat"}},
-            {"YellowGirl", new List<string>{"attack", "believe", "finish", "fire", "spark", "turret", "attack.max"}}
+            {"YellowGirl", new List<string>{"attack", "believe", "finish", "fire", "spark", "turret"}}
         };
     }
 
@@ -182,7 +176,6 @@ public class SkillDatabase : MonoBehaviour
 
         foreach (var skillName in available)
         {
-            // skillName (例: attack.max) が searchPrefix (例: attack.) で始まっているかチェック
             if (skillName.StartsWith(searchPrefix) && skills.ContainsKey(skillName))
             {
                 string desc = skillDescriptions.ContainsKey(skillName) ? skillDescriptions[skillName] : "??";
@@ -218,8 +211,6 @@ public class SkillDatabase : MonoBehaviour
             // turretとregenはクールダウン長め(8秒)
             if (key == "turret" || key == "regen")
                 member.currentCooldown = 8.0f;
-            else if (key.Contains("."))
-                member.currentCooldown = member.maxCooldown * 2.5f; // 引数付きスキルは重め（例: 7.5秒）
             else
                 member.currentCooldown = member.maxCooldown; // デフォルトは3秒
         }
@@ -697,40 +688,4 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillTurret() { /* 通知済み */ }
     void SkillRegen() { /* 通知済み */ }
-
-    // === 引数付きスキル実装 ===
-
-    void SkillAttackMax()
-    {
-        if (enemy != null)
-        {
-            int damage = 5; // 確定5ダメージ
-            enemy.TakeDamage(damage);
-            uiManager?.UpdateAllUI();
-            uiManager?.ShowDamageEffect(-1);
-            Debug.Log($"attack.max: 敵に {damage} ダメージ");
-        }
-    }
-
-    void SkillAppleAll()
-    {
-        if (gameManager != null)
-        {
-            foreach (var member in gameManager.partyMembers)
-            {
-                if (member.currentHP > 0) member.Heal(2);
-            }
-            uiManager?.UpdateAllUI();
-            Debug.Log("apple.all: 味方全員を2回復！");
-        }
-    }
-
-    void SkillStopLong()
-    {
-        if (enemy != null)
-        {
-            enemy.ApplySlow(20f, 0.5f); // 20秒間 0.5倍
-            Debug.Log("stop.long: 敵の攻撃タイマーを20秒間0.5倍に！");
-        }
-    }
 }

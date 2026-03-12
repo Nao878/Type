@@ -260,11 +260,28 @@ public class GameManager : MonoBehaviour
             enemy.Initialize(50, 2, 10f);
         }
 
-        // UI更新（パーティ表示含む）
+        // UI更新（パーティ表示、スキル一覧、スペルブック含む）
         if (uiManager != null)
         {
             uiManager.SetupPartyVisibility();
+            uiManager.InitializePartySkillTexts();
+            uiManager.InitializeSkillDictionaryText();
             uiManager.UpdateAllUI();
+        }
+    }
+
+    /// <summary>
+    /// ゲームの進行状況を完全にリセットして再起動する
+    /// </summary>
+    public void ResetGameProgress()
+    {
+        if (PlayerDataManager.Instance != null)
+        {
+            PlayerDataManager.Instance.ResetData();
+            PlayerPrefs.Save();
+            Debug.Log("Game progress has been reset. Restarting...");
+            // シーンをリロードして初期状態（タイトル/チュートリアル）に戻す
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
     }
 

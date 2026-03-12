@@ -124,7 +124,7 @@ public class UIManager : MonoBehaviour
         UpdateAllUI();
     }
 
-    void InitializePartySkillTexts()
+    public void InitializePartySkillTexts()
     {
         if (partySkillTexts == null || gameManager == null || gameManager.skillDatabase == null) return;
 
@@ -172,7 +172,7 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    void InitializeSkillDictionaryText()
+    public void InitializeSkillDictionaryText()
     {
         if (skillDictionaryText == null || gameManager == null || gameManager.skillDatabase == null) return;
 
@@ -598,6 +598,7 @@ public class UIManager : MonoBehaviour
     {
         if (skillDictionaryPanel != null)
         {
+            if (show) InitializeSkillDictionaryText(); // 開くときに内容を更新
             skillDictionaryPanel.SetActive(show);
         }
     }

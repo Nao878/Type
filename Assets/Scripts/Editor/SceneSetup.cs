@@ -181,11 +181,11 @@ public class SceneSetup : MonoBehaviour
         }
 
         // 敵HPバー背景
-        GameObject enemyHPBg = CreateImage(enemyArea.transform, "EnemyHPBarBg", new Vector2(0, -130), new Vector2(400, 40));
-        enemyHPBg.GetComponent<Image>().color = Color.gray;
+        GameObject enemyHPBg = CreateImage(enemyArea.transform, "EnemyHPBarBg", new Vector2(0, -130), new Vector2(400, 15));
+        enemyHPBg.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
 
         // 敵HPバー
-        GameObject enemyHPBarObj = CreateImage(enemyArea.transform, "EnemyHPBar", new Vector2(0, -130), new Vector2(400, 40));
+        GameObject enemyHPBarObj = CreateImage(enemyArea.transform, "EnemyHPBar", new Vector2(0, -130), new Vector2(400, 15));
         Image enemyHPBar = enemyHPBarObj.GetComponent<Image>();
         enemyHPBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
         enemyHPBar.color = Color.red;
@@ -258,11 +258,11 @@ public class SceneSetup : MonoBehaviour
             uiManager.protectEffectIcons.Add(protectIcon);
 
             // HPバー背景
-            GameObject hpBg = CreateImage(partyMemberArea.transform, "HPBarBg", new Vector2(0, -90), new Vector2(280, 30));
-            hpBg.GetComponent<Image>().color = Color.gray;
+            GameObject hpBg = CreateImage(partyMemberArea.transform, "HPBarBg", new Vector2(0, -90), new Vector2(280, 15));
+            hpBg.GetComponent<Image>().color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
 
             // HPバー
-            GameObject hpBarObj = CreateImage(partyMemberArea.transform, "HPBar", new Vector2(0, -90), new Vector2(280, 30));
+            GameObject hpBarObj = CreateImage(partyMemberArea.transform, "HPBar", new Vector2(0, -90), new Vector2(280, 15));
             Image hpBar = hpBarObj.GetComponent<Image>();
             hpBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             hpBar.color = Color.green;
@@ -271,11 +271,11 @@ public class SceneSetup : MonoBehaviour
             uiManager.partyHPBars.Add(hpBar);
 
             // SPバー背景 (HPバーの下に配置)
-            GameObject spBg = CreateImage(partyMemberArea.transform, "SPBarBg", new Vector2(0, -115), new Vector2(280, 10));
-            spBg.GetComponent<Image>().color = Color.gray;
+            GameObject spBg = CreateImage(partyMemberArea.transform, "SPBarBg", new Vector2(0, -105), new Vector2(280, 8));
+            spBg.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
 
             // SPバー
-            GameObject spBarObj = CreateImage(partyMemberArea.transform, "SPBar", new Vector2(0, -115), new Vector2(280, 10));
+            GameObject spBarObj = CreateImage(partyMemberArea.transform, "SPBar", new Vector2(0, -105), new Vector2(280, 8));
             Image spBar = spBarObj.GetComponent<Image>();
             spBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             spBar.color = Color.cyan;
@@ -634,6 +634,13 @@ public class SceneSetup : MonoBehaviour
             if (fm != null) UnityEditor.Events.UnityEventTools.AddPersistentListener(formBtn.onClick, new UnityEngine.Events.UnityAction(fm.OpenFormation));
         }
 
+        // RESET PROGRESS（データ消去）ボタン
+        GameObject resetBtnObj = CreateButton(homePanelObj.transform, "ResetProgressBtn", new Vector2(-750, -450), new Vector2(300, 80), "RESET PROGRESS");
+        Button resetBtn = resetBtnObj.GetComponent<Button>();
+        resetBtnObj.GetComponent<Image>().color = new Color(0.5f, 0.1f, 0.1f, 0.8f);
+        resetBtn.transform.GetChild(0).GetComponent<TMP_Text>().fontSize = 32;
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(resetBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.ResetGameProgress));
+
         homePanelObj.SetActive(false); // 初期は非表示
     }
 
@@ -918,7 +925,8 @@ public class SceneSetup : MonoBehaviour
     {
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
-        Debug.Log("PlayerPrefs has been reset.");
+        Debug.Log("PlayerPrefs has been reset. Reloading scene...");
+        EditorSceneManager.LoadScene(EditorSceneManager.GetActiveScene().name);
     }
 #endif
 }

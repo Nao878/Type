@@ -126,9 +126,8 @@ public class PlayerDataManager : MonoBehaviour
     // デバッグ・リセット用
     public void ResetData()
     {
-        PlayerPrefs.DeleteKey(COIN_KEY);
-        PlayerPrefs.DeleteKey(CHARA_KEY);
-        PlayerPrefs.DeleteKey(FORMATION_KEY);
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
         LoadData();
     }
 }
