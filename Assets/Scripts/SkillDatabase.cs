@@ -64,9 +64,13 @@ public class SkillDatabase : MonoBehaviour
             {"glass", SkillGlass},
             {"trick", SkillTrick},
             {"clock", SkillClock},
+            {"attack", SkillAttack},    // Mobile
+            {"wall", SkillWall},        // Stationary
+            {"fire", SkillFire},        // Stationary
+            {"thunder", SkillThunder},  // Instant
+            {"heal", SkillHeal},        // Instant
             {"scratch", SkillScratch},
             {"cat", SkillCat},
-            {"fire", SkillFire},
             {"spark", SkillSpark},
             {"turret", SkillTurret},
             {"regen", SkillRegen}
@@ -161,7 +165,11 @@ public class SkillDatabase : MonoBehaviour
 
         // クールダウン中は発動不可（Miss扱い）
         var member = GetCharacterForSkill(key);
-        if (member != null && member.currentCooldown > 0f) return false;
+        if (member != null)
+        {
+            if (member.currentHP <= 0) return false; // 戦闘不能なら入力不可
+            if (member.currentCooldown > 0f) return false;
+        }
 
         return true;
     }
@@ -228,7 +236,14 @@ public class SkillDatabase : MonoBehaviour
 
         if (skills.ContainsKey(key))
         {
+            // Phase 4: タイプ別召喚または効果発動
+            if (key == "attack") gameManager.SpawnUnit(key, UnitType.Mobile);
+            else if (key == "wall") gameManager.SpawnUnit(key, UnitType.Stationary);
+            else if (key == "fire") gameManager.SpawnUnit(key, UnitType.Stationary);
+            else if (key == "thunder" || key == "heal") gameManager.SpawnUnit(key, UnitType.Instant);
+            
             skills[key].Invoke();
+
             uiManager?.ShowSkillActivation(key);
             Debug.Log($"スキル発動: {key}");
 
@@ -380,11 +395,10 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillErase()
     {
-        // 敵の攻撃カウントダウンをリセット
+        // 敵の攻撃カウントダウンをリセット（ボスの拠点化に伴い無効化）
         if (enemy != null)
         {
-            enemy.ResetAttackTimer();
-            Debug.Log("erase: 敵の攻撃タイマーをリセット");
+            Debug.Log("erase: ボスの直接攻撃システムが廃止されたため、タイマーリセットはスキップされました。");
         }
     }
 
@@ -683,6 +697,36 @@ public class SkillDatabase : MonoBehaviour
         {
             gameManager.isSparkActive = true;
             Debug.Log("spark: 次の攻撃の威力1.5倍！");
+        }
+    }
+
+    void SkillWall() { /* GameManager.SpawnUnit で処理済み */ }
+
+    void SkillThunder()
+    {
+        // 敵全体に固定ダメージ
+        if (BattleManager.Instance != null)
+        {
+            foreach (var enemyUnit in new List<EnemyUnit>(BattleManager.Instance.enemyUnits))
+            {
+                if (enemyUnit != null) enemyUnit.TakeDamage(5);
+            }
+            if (enemy != null) enemy.TakeDamage(5);
+            Debug.Log("THUNDER: 全ての敵に5ダメージ！");
+        }
+    }
+
+    void SkillHeal()
+    {
+        // 味方キャラ全員を回復
+        if (gameManager != null)
+        {
+            foreach (var member in gameManager.partyMembers)
+            {
+                member.Heal(5);
+            }
+            uiManager?.UpdateAllUI();
+            Debug.Log("HEAL: パーティ全員を5回復！");
         }
     }
 

@@ -18,6 +18,8 @@ public class UIManager : MonoBehaviour
     public GameObject slowEffectIcon;
 
     [Header("味方UI")]
+    public Image baseHPBar;      // 統合された拠点HPバー
+    public TMP_Text baseHPText;  // 統合された拠点HPテキスト
     public List<Image> partyMemberImages;
     public List<Image> partyHPBars;
     public List<Image> partySPBars; // 追加: クールダウン用SPバー
@@ -285,6 +287,18 @@ public class UIManager : MonoBehaviour
     {
         if (gameManager == null) return;
 
+        // 共有拠点HPバーの更新
+        if (baseHPBar != null)
+        {
+            float baseRatio = gameManager.maxBaseHP > 0 ? (float)gameManager.baseHP / gameManager.maxBaseHP : 0f;
+            baseHPBar.fillAmount = baseRatio;
+            baseHPBar.color = baseRatio > 0.3f ? Color.green : Color.red;
+        }
+        if (baseHPText != null)
+        {
+            baseHPText.text = $"{gameManager.baseHP}/{gameManager.maxBaseHP}";
+        }
+
         for (int i = 0; i < gameManager.partyMembers.Count && i < partyHPBars.Count; i++)
         {
             PartyMember member = gameManager.partyMembers[i];
@@ -293,13 +307,14 @@ public class UIManager : MonoBehaviour
             if (partyHPBars[i] != null)
             {
                 partyHPBars[i].fillAmount = ratio;
-                // HPが低いと赤く
+                // 個別HPは拠点に統合されたため、常に満タンか非表示にする（ここでは維持）
                 partyHPBars[i].color = ratio > 0.3f ? Color.green : Color.red;
             }
 
             if (i < partyHPTexts.Count && partyHPTexts[i] != null)
             {
-                partyHPTexts[i].text = $"{member.currentHP}/{member.maxHP}";
+                // 個別HPテキストは非表示または固定値にする（ここでは拠点HPを表示させないよう空文字も検討したが、一旦維持）
+                partyHPTexts[i].text = ""; // 個別数値は隠す
             }
 
             // SPバーの更新 (クールダウン)
