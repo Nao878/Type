@@ -69,6 +69,10 @@ public class GameManager : MonoBehaviour
     public float activeTurretTimer = 0f;
     public float activeRegenTimer = 0f;
 
+    [Header("召喚システム")]
+    public Transform spawnPoint;
+    public Sprite allyUnitSprite;
+
     void Awake()
     {
         if (Instance == null)
@@ -210,21 +214,41 @@ public class GameManager : MonoBehaviour
         onEnd?.Invoke();
     }
 
+    [Header("拠点ステータス")]
+    public int baseHP = 100;
+    public int maxBaseHP = 100;
+
     void Update()
     {
-        if (currentState != GameState.Battle) return; // バトル中以外はタイマーや勝敗判定を進めない
+        if (currentState != GameState.Battle) return;
         if (isGameOver || isVictory) return;
 
-        // バフタイマー管理
         UpdateBuffTimers();
-
-        // 勝敗判定
         CheckGameEnd();
+    }
+
+    void CheckGameEnd()
+    {
+        // 敵HP 0で勝利
+        if (enemy != null && enemy.currentHP <= 0)
+        {
+            Victory();
+            return;
+        }
+
+        // 拠点HP 0でゲームオーバー
+        if (baseHP <= 0)
+        {
+            GameOver();
+        }
     }
 
     void InitializeGame()
     {
-        // 味方初期化（HP 10）
+        // 拠点初期化
+        baseHP = maxBaseHP;
+
+        // 味方初期化（HP管理は拠点に統合されるが、リスト自体はスペル使用等のために残す）
         partyMembers.Clear();
         currentPartyFormation.Clear();
 
@@ -285,6 +309,62 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 指定された名前のユニットを召喚する (Phase 4: タイプ別召喚ロジック)
+    /// </summary>
+    public void SpawnUnit(string unitName, UnitType type)
+    {
+        if (spawnPoint == null)
+        {
+            Debug.LogError("SpawnPoint is not set in GameManager!");
+            return;
+        }
+
+        // Instant型はPrefabを作らず効果のみ発動でも良いが、演出用に生成して即消す
+        GameObject unitObj = new GameObject($"Unit_{unitName}");
+        unitObj.transform.SetParent(spawnPoint.parent);
+        
+        RectTransform rect = unitObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(100, 100);
+
+        // 見た目（SpriteRendererを使用）
+        SpriteRenderer sr = unitObj.AddComponent<SpriteRenderer>();
+        if (allyUnitSprite != null)
+        {
+            sr.sprite = allyUnitSprite;
+        }
+        sr.color = Color.white;
+        if (unitName.Contains("wall")) sr.color = Color.green;
+        if (unitName.Contains("fire")) sr.color = Color.red;
+
+        // 挙動
+        SummonedUnit unitScript = unitObj.AddComponent<SummonedUnit>();
+        unitScript.unitType = type;
+        
+        // パラメータ設定 (簡易版)
+        if (unitName.Contains("wall")) { unitScript.hp = 30; unitScript.damage = 0; }
+        else { unitScript.hp = 10; unitScript.damage = 5; }
+
+        if (type == UnitType.Stationary && GridManager.Instance != null)
+        {
+            int slot = GridManager.Instance.GetFrontlineSlot();
+            GridManager.Instance.PlaceUnit(unitScript, slot);
+            Debug.Log($"Stationary unit {unitName} placed at slot {slot}");
+        }
+        else if (type == UnitType.Instant)
+        {
+            // Instant型の効果発動（SkillDatabase側で既に呼ばれている想定だが、ここでもフック可能）
+            Destroy(unitObj);
+            Debug.Log($"Instant unit {unitName} triggered and destroyed.");
+        }
+        else
+        {
+            // Mobile: 拠点（spawnPoint）から生成
+            rect.anchoredPosition = spawnPoint.GetComponent<RectTransform>().anchoredPosition;
+            Debug.Log($"Mobile unit {unitName} spawned at base.");
+        }
+    }
+
     void UpdateBuffTimers()
     {
         float deltaTime = Time.deltaTime;
@@ -331,32 +411,6 @@ public class GameManager : MonoBehaviour
         {
             member.UpdateInvincibility(Time.deltaTime);
             member.UpdateCooldown(Time.deltaTime);
-        }
-    }
-
-    void CheckGameEnd()
-    {
-        // 敵HP 0で勝利
-        if (enemy != null && enemy.currentHP <= 0)
-        {
-            Victory();
-            return;
-        }
-
-        // 味方全滅でゲームオーバー
-        bool allDead = true;
-        foreach (var member in partyMembers)
-        {
-            if (member.currentHP > 0)
-            {
-                allDead = false;
-                break;
-            }
-        }
-
-        if (allDead)
-        {
-            GameOver();
         }
     }
 
@@ -554,8 +608,22 @@ public class PartyMember
 
     public void TakeDamage(int amount)
     {
-        if (isInvincible) return;
+        if (isInvincible || currentHP <= 0) return;
+        
         currentHP = Mathf.Max(currentHP - amount, 0);
+
+        // 拠点HPにもダメージを反映
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.baseHP = Mathf.Max(GameManager.Instance.baseHP - amount, 0);
+            GameManager.Instance.uiManager?.UpdatePartyHP(); // UIを即座に更新
+        }
+
+        if (currentHP <= 0)
+        {
+            Debug.Log($"CHARACTER DEAD: {name}");
+            // 必要に応じてUIManagerでグレーアウト等の処理を呼ぶ
+        }
     }
 
     public void SetInvincible(float duration)

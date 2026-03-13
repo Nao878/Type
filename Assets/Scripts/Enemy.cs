@@ -48,15 +48,16 @@ public class Enemy : MonoBehaviour
 
     [Header("発狂モード")]
     public bool isEnraged = false;
-    private bool enrageTriggered = false;
 
     [Header("大技システム")]
     public bool isBigMoveQueued = false;
     public bool isShieldActive = false;
-    private bool warningShown = false;
 
     [Header("参照")]
     public GameManager gameManager;
+
+    [Header("ユニットビジュアル")]
+    public Sprite enemyUnitSprite;
 
     private bool isInitialized = false;
 
@@ -75,232 +76,137 @@ public class Enemy : MonoBehaviour
         currentHP = hp;
         baseDamage = damage;
         baseAttackInterval = interval;
-        GetNextAttackType();
-        attackTimer = GetRandomAttackInterval();
         isEnraged = false;
-        enrageTriggered = false;
         isInitialized = true;
+        StartCoroutine(SpawnUnitRoutine());
     }
 
-    void GetNextAttackType()
+    void UpdateStatusEffects()
     {
-        isBigMoveQueued = Random.value < 0.2f; // 20%の確率で大技
-        warningShown = false;
-        isShieldActive = false;
-        gameManager?.uiManager?.ShowWarningText(false);
+        if (isFrozen)
+        {
+            freezeTimer -= Time.deltaTime;
+            if (freezeTimer <= 0) isFrozen = false;
+            return;
+        }
+
+        if (isPoisoned)
+        {
+            poisonTimer -= Time.deltaTime;
+            poisonTickTimer += Time.deltaTime;
+            if (poisonTickTimer >= 1.0f)
+            {
+                TakeDamage(poisonDamagePerTick);
+                poisonTickTimer = 0f;
+            }
+            if (poisonTimer <= 0) isPoisoned = false;
+        }
+
+        if (isBurned)
+        {
+            burnTimer -= Time.deltaTime;
+            burnTickTimer += Time.deltaTime;
+            if (burnTickTimer >= 1.0f)
+            {
+                TakeDamage(burnDamagePerTick);
+                burnTickTimer = 0f;
+            }
+            if (burnTimer <= 0) isBurned = false;
+        }
+
+        if (isSlowed)
+        {
+            slowTimer -= Time.deltaTime;
+            if (slowTimer <= 0) isSlowed = false;
+        }
     }
 
     void Update()
     {
         if (gameManager == null) gameManager = GameManager.Instance;
-        if (gameManager == null || gameManager.isGameOver || gameManager.isVictory)
+        if (gameManager == null || gameManager.isGameOver || gameManager.isVictory) return;
+
+        // バトル中以外は停止
+        if (gameManager.currentState != GameState.Battle) return;
+
+        UpdateStatusEffects();
+        // 直接攻撃（UpdateAttackTimer）は廃止し、SpawnUnitRoutine（コルーチン）に集約
+    }
+
+    IEnumerator SpawnUnitRoutine()
+    {
+        // 戦闘間隔を 8-12秒に広げる
+        while (currentHP > 0)
         {
-            gameManager?.uiManager?.ShowDangerText(false);
-            gameManager?.uiManager?.ShowWarningText(false);
+            float interval = Random.Range(8.0f, 12.0f);
+            yield return new WaitForSeconds(interval);
+
+            if (gameManager != null && gameManager.currentState == GameState.Battle && !gameManager.isGameOver && !gameManager.isVictory)
+            {
+                SpawnEnemyUnit();
+            }
+        }
+    }
+
+    void SpawnEnemyUnit()
+    {
+        // 召喚用の親オブジェクトを決定
+        Transform parentTransform = transform.parent;
+        if (parentTransform == null)
+        {
+            // 自動検索: "EnemyArea" または "Canvas" を探す
+            GameObject area = GameObject.Find("EnemyArea");
+            if (area != null) parentTransform = area.transform;
+            else
+            {
+                Canvas canvas = FindFirstObjectByType<Canvas>();
+                if (canvas != null) parentTransform = canvas.transform;
+            }
+        }
+
+        if (parentTransform == null)
+        {
+            Debug.LogError("Enemy has no parent and no fallback (EnemyArea/Canvas) found! Cannot spawn unit.");
             return;
         }
 
-        // バトル中以外は敵の行動を停止する（ストーリー、ホーム、ガチャ等）
-        if (gameManager.currentState != GameState.Battle) return;
-
-        CheckEnrageMode();
-        UpdateStatusEffects();
-        UpdateAttackTimer();
-    }
-
-    void CheckEnrageMode()
-    {
-        if (!enrageTriggered && currentHP <= maxHP / 2)
+        // 自身の RectTransform チェック（座標計算のため）
+        RectTransform bossRect = GetComponent<RectTransform>();
+        Vector2 spawnBasePos = Vector2.zero;
+        if (bossRect != null)
         {
-            enrageTriggered = true;
-            isEnraged = true;
-            baseAttackInterval /= 2f; // 攻撃間隔を半分に
-            attackTimer /= 2f; // 現在のタイマーも半分に
-            Debug.Log("Enemy: 発狂モード突入！攻撃間隔が半分になった！");
-        }
-    }
-
-    void UpdateStatusEffects()
-    {
-        // 毒ダメージ処理
-        if (isPoisoned)
-        {
-            poisonTimer -= Time.deltaTime;
-            poisonTickTimer += Time.deltaTime;
-
-            if (poisonTickTimer >= 1f)
-            {
-                int damage = gameManager.CalculateDamage(poisonDamagePerTick);
-                TakeDamage(damage);
-                poisonTickTimer -= 1f;
-            }
-
-            if (poisonTimer <= 0f)
-            {
-                isPoisoned = false;
-                poisonTimer = 0f;
-                poisonTickTimer = 0f;
-            }
-        }
-
-        // 火傷ダメージ処理
-        if (isBurned)
-        {
-            burnTimer -= Time.deltaTime;
-            burnTickTimer += Time.deltaTime;
-
-            if (burnTickTimer >= 1f)
-            {
-                int damage = gameManager.CalculateDamage(burnDamagePerTick);
-                TakeDamage(damage);
-                burnTickTimer -= 1f;
-            }
-
-            if (burnTimer <= 0f)
-            {
-                isBurned = false;
-                burnTimer = 0f;
-                burnTickTimer = 0f;
-            }
-        }
-
-        // スロー効果終了判定
-        if (isSlowed)
-        {
-            slowTimer -= Time.deltaTime;
-            if (slowTimer <= 0f)
-            {
-                isSlowed = false;
-                slowTimer = 0f;
-            }
-        }
-
-        // フリーズ終了判定
-        if (isFrozen)
-        {
-            freezeTimer -= Time.deltaTime;
-            if (freezeTimer <= 0f)
-            {
-                isFrozen = false;
-                freezeTimer = 0f;
-            }
-        }
-    }
-
-    void UpdateAttackTimer()
-    {
-        // フリーズ中は攻撃しない
-        if (isFrozen) return;
-
-        // タイマー進行（スロー時は0.5倍速）
-        float timerSpeed = isSlowed ? slowMultiplier : 1f;
-        attackTimer -= Time.deltaTime * timerSpeed;
-
-        // 大技の警告表示 (attackTimer <= 3.0f)
-        if (isBigMoveQueued && attackTimer <= 3f && !warningShown)
-        {
-            warningShown = true;
-            gameManager?.uiManager?.ShowWarningText(true);
-        }
-
-        // 発狂モード中のDANGER表示 (attackTimer <= 2.0f かつ 大技ではない時)
-        if (isEnraged && !isBigMoveQueued)
-        {
-            if (attackTimer <= 2f)
-            {
-                gameManager?.uiManager?.ShowDangerText(true);
-            }
-            else
-            {
-                gameManager?.uiManager?.ShowDangerText(false);
-            }
-        }
-
-        if (attackTimer <= 0f)
-        {
-            PerformAttack();
-            attackTimer = GetRandomAttackInterval();
-            GetNextAttackType();
-            DetermineNextTarget();
-        }
-    }
-
-    void PerformAttack()
-    {
-        if (gameManager == null) return;
-
-        // エフェクトを隠す
-        gameManager.uiManager?.ShowWarningText(false);
-        gameManager.uiManager?.ShowDangerText(false);
-
-        PartyMember target = null;
-        if (nextTargetIndex >= 0 && nextTargetIndex < gameManager.partyMembers.Count && gameManager.partyMembers[nextTargetIndex].currentHP > 0)
-        {
-            target = gameManager.partyMembers[nextTargetIndex];
+            spawnBasePos = bossRect.anchoredPosition;
         }
         else
         {
-            target = gameManager.GetRandomAliveMember();
+            // RectTransform がない場合、デフォルトの右端付近に設定
+            spawnBasePos = new Vector2(750, 0);
         }
-        if (target == null) return;
 
-        int damage = baseDamage;
+        GameObject unitObj = new GameObject("EnemyUnit_Minion");
+        unitObj.transform.SetParent(parentTransform);
 
-        // 大技の処理
-        if (isBigMoveQueued)
+        RectTransform rect = unitObj.AddComponent<RectTransform>();
+        // ボスの現在位置から少し左に出現させる
+        rect.anchoredPosition = spawnBasePos + new Vector2(-50, 0);
+        rect.sizeDelta = new Vector2(100, 100);
+        
+        // 見た目（SpriteRendererを使用）
+        SpriteRenderer sr = unitObj.AddComponent<SpriteRenderer>();
+        if (enemyUnitSprite != null)
         {
-            if (isShieldActive)
-            {
-                damage = 1; // 防御成功
-                Debug.Log("Enemy: プレイヤーがシールドで大技を防御！");
-                isShieldActive = false;
-            }
-            else
-            {
-                damage *= 3; // 防御失敗、3倍ダメージ
-                Debug.Log("Enemy: 大技直撃！3倍ダメージ！");
-            }
+            sr.sprite = enemyUnitSprite;
         }
+        sr.color = Color.gray;
 
-        // 攻撃力減少適用
-        if (isAttackReduced)
-        {
-            damage = Mathf.RoundToInt(damage * (1f - attackReductionPercent));
-            damage = Mathf.Max(damage, 1); // 最低1ダメージ
-        }
+        // 挙動
+        EnemyUnit script = unitObj.AddComponent<EnemyUnit>();
+        script.moveSpeed = 80f;
+        script.hp = 10;
+        script.damage = 2;
+        script.attackInterval = 1.5f;
 
-        // ガラスバリアによる反射処理
-        if (gameManager.glassBarrierActive)
-        {
-            Debug.Log($"Enemy: 攻撃がガラスバリアで反射された！({damage}ダメージ)");
-            TakeDamage(damage);
-            
-            // fireglassコンボの追加効果
-            if (gameManager.glassReflectDamage > 0)
-            {
-                Debug.Log($"Enemy: fireglassコンボの追加爆発！({gameManager.glassReflectDamage}ダメージ＆火傷)");
-                TakeDamage(gameManager.glassReflectDamage);
-                ApplyBurn(10f, 1);
-                gameManager.glassReflectDamage = 0;
-            }
-
-            gameManager.glassBarrierActive = false;
-            gameManager.uiManager?.UpdateAllUI();
-            return; // プレイヤーへのダメージ処理はスキップ
-        }
-
-        target.TakeDamage(damage);
-        gameManager.uiManager?.UpdateAllUI();
-        gameManager.uiManager?.ShowDamageEffect(gameManager.partyMembers.IndexOf(target));
-
-        // 初回ダメージ時の回復チュートリアル
-        gameManager.uiManager?.ShowHealTutorial();
-    }
-
-    float GetRandomAttackInterval()
-    {
-        // 平均10秒のランダム間隔（8〜12秒）
-        return Random.Range(baseAttackInterval * 0.8f, baseAttackInterval * 1.2f);
+        Debug.Log($"Enemy Boss spawned a minion at {rect.anchoredPosition} under {parentTransform.name}");
     }
 
     public void DetermineNextTarget()
@@ -368,15 +274,6 @@ public class Enemy : MonoBehaviour
     {
         isFrozen = true;
         freezeTimer = duration;
-    }
-
-    /// <summary>
-    /// 攻撃タイマーをリセット
-    /// </summary>
-    public void ResetAttackTimer()
-    {
-        attackTimer = GetRandomAttackInterval();
-        GetNextAttackType();
     }
 
     /// <summary>

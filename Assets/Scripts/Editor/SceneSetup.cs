@@ -33,6 +33,10 @@ public class SceneSetup : MonoBehaviour
         enemy.gameManager = gameManager;
         gameManager.enemy = enemy;
 
+        // ユニット用Spriteをアサイン（存在する場合）
+        gameManager.allyUnitSprite = FindSpriteByName("Entity");
+        enemy.enemyUnitSprite = FindSpriteByName("EnemyEntity");
+
         // TypingControllerオブジェクト作成
         GameObject typingObj = new GameObject("TypingController");
         TypingController typingController = typingObj.AddComponent<TypingController>();
@@ -162,11 +166,11 @@ public class SceneSetup : MonoBehaviour
         background.GetComponent<RectTransform>().anchorMax = Vector2.one;
         background.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
 
-        // === 敵エリア（上部中央）===
+        // === 敵エリア（右端へ移動）===
         GameObject enemyArea = new GameObject("EnemyArea");
         enemyArea.transform.SetParent(canvas.transform);
         RectTransform enemyAreaRect = enemyArea.AddComponent<RectTransform>();
-        enemyAreaRect.anchoredPosition = new Vector2(0, 400); // 300 -> 400
+        enemyAreaRect.anchoredPosition = new Vector2(800, -200);
         enemyAreaRect.sizeDelta = new Vector2(400, 300);
 
         // 敵画像
@@ -206,6 +210,43 @@ public class SceneSetup : MonoBehaviour
         
         uiManager.slowEffectIcon = CreateImage(enemyArea.transform, "SlowIcon", new Vector2(0, -180), new Vector2(30, 30));
         uiManager.slowEffectIcon.GetComponent<Image>().color = Color.yellow;
+
+        // === 召喚ポイント ===
+        GameObject spawnPointObj = new GameObject("SpawnPoint");
+        spawnPointObj.transform.SetParent(canvas.transform);
+        RectTransform spawnRect = spawnPointObj.AddComponent<RectTransform>();
+        spawnRect.anchoredPosition = new Vector2(-600, -200);
+        gameManager.spawnPoint = spawnPointObj.transform;
+
+        // === BattleManager ===
+        GameObject bmObj = new GameObject("BattleManager");
+        BattleManager bm = bmObj.AddComponent<BattleManager>();
+        bm.attackRange = 120f;
+        bm.allyBaseX = -750f;
+        bm.enemyBaseX = 750f;
+
+        // === 味方拠点HPバー（左端全体）===
+        GameObject baseHPArea = new GameObject("BaseHPArea");
+        baseHPArea.transform.SetParent(canvas.transform);
+        RectTransform baseHPRect = baseHPArea.AddComponent<RectTransform>();
+        baseHPRect.anchoredPosition = new Vector2(-700, 400); // 画面左上に大きく
+        baseHPRect.sizeDelta = new Vector2(500, 50);
+
+        GameObject baseHPBg = CreateImage(baseHPArea.transform, "BaseHPBarBg", Vector2.zero, new Vector2(500, 50));
+        baseHPBg.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
+
+        GameObject baseHPBarObj = CreateImage(baseHPArea.transform, "BaseHPBar", Vector2.zero, new Vector2(500, 50));
+        Image baseHPBar = baseHPBarObj.GetComponent<Image>();
+        baseHPBar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+        baseHPBar.color = Color.green;
+        baseHPBar.type = Image.Type.Filled;
+        baseHPBar.fillMethod = Image.FillMethod.Horizontal;
+        uiManager.baseHPBar = baseHPBar;
+
+        GameObject baseHPTextObj = CreateText(baseHPArea.transform, "BaseHPText", new Vector2(0, 0), "100/100");
+        uiManager.baseHPText = baseHPTextObj.GetComponent<TMP_Text>();
+        uiManager.baseHPText.fontSize = 36;
+        uiManager.baseHPText.alignment = TextAlignmentOptions.Center;
 
         // === 味方エリア（下部）===
         uiManager.partyMemberImages = new System.Collections.Generic.List<Image>();
@@ -918,6 +959,21 @@ public class SceneSetup : MonoBehaviour
         tmp.color = Color.white;
 
         return obj;
+    }
+
+    static Sprite FindSpriteByName(string spriteName)
+    {
+        string[] guids = AssetDatabase.FindAssets($"{spriteName} t:Sprite");
+        foreach (var guid in guids)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite != null && sprite.name == spriteName)
+            {
+                return sprite;
+            }
+        }
+        return null;
     }
 
     [MenuItem("TypingRPG/Reset PlayerPrefs")]
