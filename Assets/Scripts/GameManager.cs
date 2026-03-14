@@ -87,6 +87,13 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // エディタ実行時に画像を自動ロード (Assets/Images/Entity.png)
+#if UNITY_EDITOR
+        if (allyUnitSprite == null)
+        {
+            allyUnitSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/Entity.png");
+        }
+#endif
         InitializeGame();
         
         // チュートリアル進行状況の確認
@@ -325,17 +332,24 @@ public class GameManager : MonoBehaviour
         unitObj.transform.SetParent(spawnPoint.parent);
         
         RectTransform rect = unitObj.AddComponent<RectTransform>();
+        unitObj.transform.localScale = Vector3.one; // 親のスケールの影響をリセット
         rect.sizeDelta = new Vector2(100, 100);
 
-        // 見た目（SpriteRendererを使用）
-        SpriteRenderer sr = unitObj.AddComponent<SpriteRenderer>();
+        // 見た目（Canvas上で表示するため Image を使用）
+        Image img = unitObj.AddComponent<Image>();
         if (allyUnitSprite != null)
         {
-            sr.sprite = allyUnitSprite;
+            img.sprite = allyUnitSprite;
         }
-        sr.color = Color.white;
-        if (unitName.Contains("wall")) sr.color = Color.green;
-        if (unitName.Contains("fire")) sr.color = Color.red;
+        else
+        {
+            // フォールバック: 白い四角
+            img.color = Color.white;
+        }
+
+        // タイプ別の色分け（現在は画像優先だが、一応残す）
+        if (unitName.Contains("wall")) img.color = new Color(0.5f, 1f, 0.5f, 1f); // 薄緑
+        if (unitName.Contains("fire")) img.color = new Color(1f, 0.5f, 0.5f, 1f); // 薄赤
 
         // 挙動
         SummonedUnit unitScript = unitObj.AddComponent<SummonedUnit>();

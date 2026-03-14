@@ -11,7 +11,7 @@ public class BattleManager : MonoBehaviour
     public List<EnemyUnit> enemyUnits = new List<EnemyUnit>();
 
     [Header("戦闘設定")]
-    public float attackRange = 40f; // ユニット同士がしっかり重なるまで近づく
+    public float attackRange = 200f; // 100px幅のキャラ同士が100pxの隙間を空けて戦う距離 (50 + 100 + 50)
     public float allyBaseX = -750f;
     public float enemyBaseX = 750f;
 

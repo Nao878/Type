@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 敵キャラクター（ロボット）の管理
@@ -63,6 +64,12 @@ public class Enemy : MonoBehaviour
 
     void Start()
     {
+#if UNITY_EDITOR
+        if (enemyUnitSprite == null)
+        {
+            enemyUnitSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Images/EnemyEntity.png");
+        }
+#endif
         if (!isInitialized)
         {
             Initialize(50, 2, 10f);
@@ -150,23 +157,22 @@ public class Enemy : MonoBehaviour
 
     void SpawnEnemyUnit()
     {
-        // 召喚用の親オブジェクトを決定
-        Transform parentTransform = transform.parent;
-        if (parentTransform == null)
+        // 召喚用の親オブジェクトを決定 (Canvas 直下に統一して座標ズレを防ぐ)
+        Transform targetParent = null;
+        if (GameManager.Instance != null && GameManager.Instance.spawnPoint != null)
         {
-            // 自動検索: "EnemyArea" または "Canvas" を探す
-            GameObject area = GameObject.Find("EnemyArea");
-            if (area != null) parentTransform = area.transform;
-            else
-            {
-                Canvas canvas = FindFirstObjectByType<Canvas>();
-                if (canvas != null) parentTransform = canvas.transform;
-            }
+            targetParent = GameManager.Instance.spawnPoint.parent; // Canvas を想定
         }
 
-        if (parentTransform == null)
+        if (targetParent == null)
         {
-            Debug.LogError("Enemy has no parent and no fallback (EnemyArea/Canvas) found! Cannot spawn unit.");
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            if (canvas != null) targetParent = canvas.transform;
+        }
+
+        if (targetParent == null)
+        {
+            Debug.LogError("No Canvas found to spawn EnemyUnit!");
             return;
         }
 
@@ -179,25 +185,26 @@ public class Enemy : MonoBehaviour
         }
         else
         {
-            // RectTransform がない場合、デフォルトの右端付近に設定
-            spawnBasePos = new Vector2(750, 0);
+            // RectTransform がない場合、デフォルトの右端付近（味方と同じ高さ Y=-200）に設定
+            spawnBasePos = new Vector2(750, -200);
         }
 
         GameObject unitObj = new GameObject("EnemyUnit_Minion");
-        unitObj.transform.SetParent(parentTransform);
+        unitObj.transform.SetParent(targetParent, false); // オフセットのある EnemyArea ではなく Canvas 等に配置
 
         RectTransform rect = unitObj.AddComponent<RectTransform>();
-        // ボスの現在位置から少し左に出現させる
+        unitObj.transform.localScale = Vector3.one; // スケールを確実に1に固定
+        // ボスの現在位置（またはデフォルト設定）から少し左に出現させる
         rect.anchoredPosition = spawnBasePos + new Vector2(-50, 0);
         rect.sizeDelta = new Vector2(100, 100);
         
-        // 見た目（SpriteRendererを使用）
-        SpriteRenderer sr = unitObj.AddComponent<SpriteRenderer>();
+        // 見た目（Canvas上で表示するため Image を使用）
+        Image img = unitObj.AddComponent<Image>();
         if (enemyUnitSprite != null)
         {
-            sr.sprite = enemyUnitSprite;
+            img.sprite = enemyUnitSprite;
         }
-        sr.color = Color.gray;
+        img.color = Color.white; // 元の画像の色を出すため白
 
         // 挙動
         EnemyUnit script = unitObj.AddComponent<EnemyUnit>();
@@ -206,7 +213,10 @@ public class Enemy : MonoBehaviour
         script.damage = 2;
         script.attackInterval = 1.5f;
 
-        Debug.Log($"Enemy Boss spawned a minion at {rect.anchoredPosition} under {parentTransform.name}");
+        Debug.Log($"Enemy Boss spawned a minion at {rect.anchoredPosition} under {targetParent.name}");
+
+        // BattleManagerに登録
+        if (BattleManager.Instance != null) BattleManager.Instance.RegisterEnemy(script);
     }
 
     public void DetermineNextTarget()

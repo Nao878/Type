@@ -10,10 +10,12 @@ public class EnemyUnit : MonoBehaviour
     public float moveSpeed = 80f;
     public int damage = 1;
     public float attackInterval = 1.2f;
+    public float attackRange = 200f; // 交戦距離 (1キャラ分の隙間用)
 
     [Header("ビジュアル")]
     private Image unitImage;
     private Color originalColor;
+    private bool isFlashing = false; // 追加
 
     [HideInInspector] public bool isMoving = true;
     private float attackTimer = 0f;
@@ -39,19 +41,25 @@ public class EnemyUnit : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.currentState != GameState.Battle) return;
         if (hp <= 0) Die();
 
-        if (isMoving)
+        RectTransform rect = GetComponent<RectTransform>();
+        bool reachedBase = rect != null && rect.anchoredPosition.x <= (BattleManager.Instance?.allyBaseX ?? -750f) + 50f;
+        bool hasTarget = BattleManager.Instance != null && BattleManager.Instance.IsEnemyInRange(this);
+
+        if (reachedBase || hasTarget)
         {
-            MoveBack();
-        }
-        else
-        {
-            // 移動停止中は攻撃タイマーを進める
+            isMoving = false;
             attackTimer += Time.deltaTime;
             if (attackTimer >= attackInterval)
             {
                 TryAttack();
                 attackTimer = 0f;
             }
+        }
+        else
+        {
+            isMoving = true;
+            MoveBack();
+            attackTimer = 0f;
         }
     }
 
@@ -120,12 +128,13 @@ public class EnemyUnit : MonoBehaviour
 
     IEnumerator FlashRed()
     {
-        if (unitImage != null)
-        {
-            unitImage.color = Color.red;
-            yield return new WaitForSeconds(0.1f);
-            unitImage.color = originalColor;
-        }
+        if (unitImage == null || isFlashing) yield break;
+        isFlashing = true;
+        Color oldColor = unitImage.color;
+        unitImage.color = Color.red;
+        yield return new WaitForSeconds(0.1f);
+        if (unitImage != null) unitImage.color = oldColor;
+        isFlashing = false;
     }
 
     public void Die()

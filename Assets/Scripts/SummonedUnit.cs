@@ -20,10 +20,12 @@ public class SummonedUnit : MonoBehaviour
     public float moveSpeed = 100f;
     public int damage = 2;
     public float attackInterval = 1.0f;
+    public float attackRange = 200f; // 交戦距離 (1キャラ分の隙間用)
 
     [Header("ビジュアル")]
     private Image unitImage;
     private Color originalColor;
+    private bool isFlashing = false; // 追加
 
     [HideInInspector] public bool isMoving = true;
     private float attackTimer = 0f;
@@ -134,10 +136,13 @@ public class SummonedUnit : MonoBehaviour
 
     IEnumerator FlashRed()
     {
-        if (unitImage == null) yield break;
+        if (unitImage == null || isFlashing) yield break;
+        isFlashing = true;
+        Color oldColor = unitImage.color;
         unitImage.color = Color.red;
         yield return new WaitForSeconds(0.1f);
-        unitImage.color = originalColor;
+        if (unitImage != null) unitImage.color = oldColor;
+        isFlashing = false;
     }
 
     public void Die()

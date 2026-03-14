@@ -34,47 +34,55 @@ public class SkillDatabase : MonoBehaviour
 
     void InitializeSkills()
     {
-        skills = new Dictionary<string, Action>()
-        {
-            // === 基本スキル4種 ===
-            {"apple", SkillApple},      // 最もHPが低い味方を2回復
-            {"stop", SkillStop},        // 10秒間、敵の攻撃タイマー進行速度0.5倍
-            {"poison", SkillPoison},    // 敵に毒（10秒間、1秒ごとに1ダメージ）
-            {"buff", SkillBuff},        // 10秒間、味方の全与ダメージ2倍
+        skills = new Dictionary<string, Action>();
 
-            // === 追加スキル15種 ===
-            {"protect", SkillProtect},  // 5秒間、ランダムな味方1人を無敵化
-            {"attack", SkillAttack},    // 敵に基本ダメージ3
-            {"speed", SkillSpeed},      // 5秒間、タイピング判定緩和
-            {"share", SkillShare},      // パーティ全員のHPを平均化
-            {"erase", SkillErase},      // 敵の攻撃カウントダウンをリセット
-            {"future", SkillFuture},    // 次に狙われる味方を強調表示
-            {"change", SkillChange},    // 敵の属性/耐性をランダム変更
-            {"reduce", SkillReduce},    // 敵の攻撃力を永続10%減少（重複不可）
-            {"active", SkillActive},    // 全継続バフの効果時間を3秒延長
-            {"believe", SkillBelieve},  // 30%の確率で発動中のダメージ3倍
-            {"ignore", SkillIgnore},    // 敵の防御を無視してダメージ
-            {"supply", SkillSupply},    // 味方全員のHPを1回復
-            {"freeze", SkillFreeze},    // 3秒間、敵の攻撃タイマー完全停止
-            {"divide", SkillDivide},    // 敵の現在HPの10%分のダメージ
-            {"finish", SkillFinish},    // 敵HP10%以下（5以下）なら即座に勝利
-            {"shield", SkillShield},    // 敵の大技準備中（3秒以内）に防御する
-            {"water", SkillWater},      // 基本ダメージ1（コンボ用）
-            {"cure", SkillCure},
-            {"glass", SkillGlass},
-            {"trick", SkillTrick},
-            {"clock", SkillClock},
-            {"attack", SkillAttack},    // Mobile
-            {"wall", SkillWall},        // Stationary
-            {"fire", SkillFire},        // Stationary
-            {"thunder", SkillThunder},  // Instant
-            {"heal", SkillHeal},        // Instant
-            {"scratch", SkillScratch},
-            {"cat", SkillCat},
-            {"spark", SkillSpark},
-            {"turret", SkillTurret},
-            {"regen", SkillRegen}
+        // ローカルヘルパーで重複キー登録を防止
+        System.Action<string, Action> addSkillEntry = (key, action) =>
+        {
+            key = key.ToLower();
+            if (!skills.ContainsKey(key))
+            {
+                skills.Add(key, action);
+            }
         };
+
+        // === 基本スキル4種 ===
+        addSkillEntry("apple", SkillApple);      // 最もHPが低い味方を2回復
+        addSkillEntry("stop", SkillStop);        // 10秒間、敵の攻撃タイマー進行速度0.5倍
+        addSkillEntry("poison", SkillPoison);    // 敵に毒（10秒間、1秒ごとに1ダメージ）
+        addSkillEntry("buff", SkillBuff);        // 10秒間、味方の全与ダメージ2倍
+
+        // === 追加スキル ===
+        addSkillEntry("protect", SkillProtect);  // 5秒間、ランダムな味方1人を無敵化
+        addSkillEntry("attack", SkillAttack);    // 敵に基本ダメージ3
+        addSkillEntry("speed", SkillSpeed);      // 5秒間、タイピング判定緩和
+        addSkillEntry("share", SkillShare);      // パーティ全員のHPを平均化
+        addSkillEntry("erase", SkillErase);      // 敵の攻撃カウントダウンをリセット
+        addSkillEntry("future", SkillFuture);    // 次に狙われる味方を強調表示
+        addSkillEntry("change", SkillChange);    // 敵の属性/耐性をランダム変更
+        addSkillEntry("reduce", SkillReduce);    // 敵の攻撃力を永続10%減少（重複不可）
+        addSkillEntry("active", SkillActive);    // 全継続バフの効果時間を3秒延長
+        addSkillEntry("believe", SkillBelieve);  // 30%の確率で発動中のダメージ3倍
+        addSkillEntry("ignore", SkillIgnore);    // 敵の防御を無視してダメージ
+        addSkillEntry("supply", SkillSupply);    // 味方全員のHP1回復
+        addSkillEntry("freeze", SkillFreeze);    // 3秒間、敵の攻撃タイマー完全停止
+        addSkillEntry("divide", SkillDivide);    // 敵の現在HPの10%分のダメージ
+        addSkillEntry("finish", SkillFinish);    // 敵HP10%以下（5以下）なら即座に勝利
+        addSkillEntry("shield", SkillShield);    // 敵の大技準備中（3秒以内）に防御する
+        addSkillEntry("water", SkillWater);      // 基本ダメージ1（コンボ用）
+        addSkillEntry("cure", SkillCure);
+        addSkillEntry("glass", SkillGlass);
+        addSkillEntry("trick", SkillTrick);
+        addSkillEntry("clock", SkillClock);
+        addSkillEntry("wall", SkillWall);        // Stationary
+        addSkillEntry("fire", SkillFire);        // Stationary
+        addSkillEntry("thunder", SkillThunder);  // Instant
+        addSkillEntry("heal", SkillHeal);        // Instant
+        addSkillEntry("scratch", SkillScratch);
+        addSkillEntry("cat", SkillCat);
+        addSkillEntry("spark", SkillSpark);
+        addSkillEntry("turret", SkillTurret);
+        addSkillEntry("regen", SkillRegen);
 
         skillDescriptions = new Dictionary<string, string>()
         {
@@ -340,14 +348,10 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillAttack()
     {
-        // 敵に基本ダメージ3
-        if (enemy != null)
-        {
-            int damage = gameManager.CalculateDamage(3);
-            enemy.TakeDamage(damage);
-            uiManager?.UpdateEnemyHP();
-            Debug.Log($"attack: 敵に{damage}ダメージ");
-        }
+        // 以前の直接ダメージロジックは廃止。
+        // ActivateSkill メソッド内で GameManager.SpawnUnit(key, UnitType.Mobile) が呼ばれることで、
+        // 味方ユニットが召喚され、それが敵拠点へ進軍してダメージを与える。
+        Debug.Log("attack: ユニット召喚による攻撃（直接ダメージ廃止）");
     }
 
     void SkillSpeed()
@@ -678,16 +682,8 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillFire()
     {
-        // 3ダメ＋火傷
-        if (enemy != null)
-        {
-            int damage = 3;
-            if (gameManager != null && gameManager.isBuffActive) damage *= 2;
-            enemy.TakeDamage(damage);
-            enemy.ApplyBurn(10f, 1); // あとでEnemyに追加
-            uiManager?.UpdateAllUI();
-            Debug.Log($"fire: 敵に {damage} ダメージ ＋火傷付与");
-        }
+        // 直接ダメージではなく、Stationaryユニットとしての召喚に変更
+        Debug.Log("fire: 火炎ユニット召喚（直接ダメージ廃止）");
     }
 
     void SkillSpark()
