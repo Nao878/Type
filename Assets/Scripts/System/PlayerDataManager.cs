@@ -124,10 +124,21 @@ public class PlayerDataManager : MonoBehaviour
     }
 
     // デバッグ・リセット用
-    public void ResetData()
+    // デバッグ・リセット用
+        public void ResetData()
     {
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();
+        
+        // メモリ内のデータを明示的に初期化
+        HackCoins = 0;
+        UnlockedCharacters = new List<string> { "GlassMan" };
+        PartyFormation = new List<string> { "GlassMan" };
+        HasSeenTutorialStory1 = false;
+        HasSeenTutorialStory2 = false;
+
+        Debug.Log("PlayerDataManager: All data has been reset to initial state.");
+        
         LoadData();
     }
 }

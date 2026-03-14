@@ -255,6 +255,12 @@ public class GameManager : MonoBehaviour
         // 拠点初期化
         baseHP = maxBaseHP;
 
+        // 場に残っているユニットを削除
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.ClearAllUnits();
+        }
+
         // 味方初期化（HP管理は拠点に統合されるが、リスト自体はスペル使用等のために残す）
         partyMembers.Clear();
         currentPartyFormation.Clear();
@@ -433,6 +439,12 @@ public class GameManager : MonoBehaviour
         isVictory = true;
         typingController?.DisableInput();
 
+        // 戦闘終了時にユニットを削除
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.ClearAllUnits();
+        }
+
         if (PlayerDataManager.Instance != null && !PlayerDataManager.Instance.HasSeenTutorialStory2 && tutorialStory2 != null)
         {
             // 初回クリア時：ストーリー2を再生し、終了後にホーム画面へ
@@ -476,6 +488,13 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         isGameOver = true;
+
+        // 戦闘終了時にユニットを削除
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.ClearAllUnits();
+        }
+
         uiManager?.ShowGameOver();
         typingController?.DisableInput();
     }

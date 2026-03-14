@@ -675,12 +675,6 @@ public class SceneSetup : MonoBehaviour
             if (fm != null) UnityEditor.Events.UnityEventTools.AddPersistentListener(formBtn.onClick, new UnityEngine.Events.UnityAction(fm.OpenFormation));
         }
 
-        // RESET PROGRESS（データ消去）ボタン
-        GameObject resetBtnObj = CreateButton(homePanelObj.transform, "ResetProgressBtn", new Vector2(-750, -450), new Vector2(300, 80), "RESET PROGRESS");
-        Button resetBtn = resetBtnObj.GetComponent<Button>();
-        resetBtnObj.GetComponent<Image>().color = new Color(0.5f, 0.1f, 0.1f, 0.8f);
-        resetBtn.transform.GetChild(0).GetComponent<TMP_Text>().fontSize = 32;
-        UnityEditor.Events.UnityEventTools.AddPersistentListener(resetBtn.onClick, new UnityEngine.Events.UnityAction(gameManager.ResetGameProgress));
 
         homePanelObj.SetActive(false); // 初期は非表示
     }

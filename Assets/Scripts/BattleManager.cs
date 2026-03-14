@@ -172,4 +172,20 @@ public class BattleManager : MonoBehaviour
 
     public void RegisterAlly(SummonedUnit unit) => allyUnits.Add(unit);
     public void RegisterEnemy(EnemyUnit unit) => enemyUnits.Add(unit);
+
+    public void ClearAllUnits()
+    {
+        foreach (var ally in allyUnits)
+        {
+            if (ally != null) Destroy(ally.gameObject);
+        }
+        foreach (var enemy in enemyUnits)
+        {
+            if (enemy != null) Destroy(enemy.gameObject);
+        }
+        allyUnits.Clear();
+        enemyUnits.Clear();
+        Debug.Log("BattleManager: All units cleared.");
+    }
+
 }
