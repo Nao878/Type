@@ -39,6 +39,7 @@ public class UIManager : MonoBehaviour
     public TMP_Text speedBuffTimerText;
     public TMP_Text activeTurretText; // 追加
     public TMP_Text activeRegenText;  // 追加
+    public TMP_Text autoPendingText;  // 追加
 
     [Header("エフェクト")]
     public Transform typingParticleContainer;
@@ -434,6 +435,21 @@ public class UIManager : MonoBehaviour
         skillActivationText.gameObject.SetActive(true);
         yield return new WaitForSeconds(1.5f);
         skillActivationText.gameObject.SetActive(false);
+    }
+
+    public void ShowAutoPending(bool show)
+    {
+        if (autoPendingText != null)
+        {
+            autoPendingText.text = "AWAITING COMMAND...";
+            autoPendingText.gameObject.SetActive(show);
+            
+            // 点滅演出
+            if (show)
+            {
+                autoPendingText.color = new Color(1, 1, 0, Mathf.PingPong(Time.time * 4f, 1f));
+            }
+        }
     }
 
     public void ShowDamageEffect(int partyIndex)

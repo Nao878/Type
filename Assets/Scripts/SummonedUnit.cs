@@ -30,7 +30,7 @@ public class SummonedUnit : MonoBehaviour
     [HideInInspector] public bool isMoving = true;
     private float attackTimer = 0f;
 
-    void Start()
+    protected virtual void Start()
     {
         unitImage = GetComponent<Image>();
         if (unitImage != null) originalColor = unitImage.color;

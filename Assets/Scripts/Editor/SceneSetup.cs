@@ -13,10 +13,15 @@ using UnityEngine.Events;
 public class SceneSetup : MonoBehaviour
 {
 #if UNITY_EDITOR
-    [MenuItem("TypingRPG/Setup Scene")]
+    [MenuItem("TypingRPG/Setup Game (Full Reset)")]
     public static void SetupScene()
     {
-        // 既存のオブジェクトを削除（カメラとEventSystem以外）
+        // 1. PlayerPrefsのリセット
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        Debug.Log("PlayerPrefs has been reset.");
+
+        // 2. 既存のオブジェクトを削除（カメラとEventSystem以外）
         ClearScene();
 
         // GameManagerオブジェクト作成
@@ -205,6 +210,10 @@ public class SceneSetup : MonoBehaviour
         uiManager.poisonEffectIcon = CreateImage(enemyArea.transform, "PoisonIcon", new Vector2(-80, -180), new Vector2(30, 30));
         uiManager.poisonEffectIcon.GetComponent<Image>().color = new Color(0.5f, 0f, 0.5f);
         
+        uiManager.activeRegenText = CreateText(canvas.transform, "ActiveRegenText", new Vector2(0, 50), "REGEN ACTIVE: 10.0s").GetComponent<TextMeshProUGUI>();
+        uiManager.autoPendingText = CreateText(canvas.transform, "AutoPendingText", new Vector2(0, -100), "AWAITING COMMAND...").GetComponent<TextMeshProUGUI>(); // 中央付近
+        uiManager.autoPendingText.color = Color.yellow;
+        uiManager.autoPendingText.gameObject.SetActive(false);
         uiManager.freezeEffectIcon = CreateImage(enemyArea.transform, "FreezeIcon", new Vector2(-40, -180), new Vector2(30, 30));
         uiManager.freezeEffectIcon.GetComponent<Image>().color = Color.cyan;
         
@@ -968,15 +977,6 @@ public class SceneSetup : MonoBehaviour
             }
         }
         return null;
-    }
-
-    [MenuItem("TypingRPG/Reset PlayerPrefs")]
-    public static void ResetPlayerPrefs()
-    {
-        PlayerPrefs.DeleteAll();
-        PlayerPrefs.Save();
-        Debug.Log("PlayerPrefs has been reset. Reloading scene...");
-        EditorSceneManager.LoadScene(EditorSceneManager.GetActiveScene().name);
     }
 #endif
 }

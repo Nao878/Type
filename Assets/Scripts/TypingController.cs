@@ -17,6 +17,7 @@ public class TypingController : MonoBehaviour
 
     private string currentInput = "";
     private bool inputEnabled = true;
+    public bool isAutoPending = false; // マクロ記録待機フラグ
 
     void Update()
     {
@@ -61,6 +62,12 @@ public class TypingController : MonoBehaviour
             CheckWordCompletion();
         }
 
+        // マクロ待機中のUI表示
+        if (uiManager != null)
+        {
+            uiManager.ShowAutoPending(isAutoPending);
+        }
+
         // UI更新
         UpdateInputUI();
     }
@@ -72,9 +79,23 @@ public class TypingController : MonoBehaviour
         // 現在の入力がスキル辞書に存在するか確認
         if (skillDatabase.HasSkill(currentInput))
         {
-            skillDatabase.ActivateSkill(currentInput);
-            Debug.Log($"Input: {currentInput}");
-            ClearInput(); // Clear input and update UI
+            if (isAutoPending && currentInput.ToLower() != "auto")
+            {
+                // マクロとして記録し、Spawnerを設置
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.SpawnSpawner(currentInput);
+                }
+                isAutoPending = false;
+                Debug.Log($"Macro Recorded: {currentInput}");
+            }
+            else
+            {
+                skillDatabase.ActivateSkill(currentInput);
+                Debug.Log($"Input: {currentInput}");
+            }
+            
+            ClearInput(); 
         }
     }
 

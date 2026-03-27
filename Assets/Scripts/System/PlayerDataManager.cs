@@ -124,8 +124,7 @@ public class PlayerDataManager : MonoBehaviour
     }
 
     // デバッグ・リセット用
-    // デバッグ・リセット用
-        public void ResetData()
+    public void ResetData()
     {
         PlayerPrefs.DeleteAll();
         PlayerPrefs.Save();

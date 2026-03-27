@@ -385,6 +385,38 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Spawnerユニットを召喚する
+    /// </summary>
+    public void SpawnSpawner(string skillWord)
+    {
+        if (spawnPoint == null) return;
+
+        GameObject spawnerObj = new GameObject($"Spawner_{skillWord}");
+        spawnerObj.transform.SetParent(spawnPoint.parent);
+        
+        RectTransform rect = spawnerObj.AddComponent<RectTransform>();
+        spawnerObj.transform.localScale = Vector3.one;
+        rect.sizeDelta = new Vector2(100, 100);
+
+        Image img = spawnerObj.AddComponent<Image>();
+        if (allyUnitSprite != null) img.sprite = allyUnitSprite;
+        else img.color = new Color(0.7f, 0.3f, 1f);
+
+        SpawnerEntity spawnerScript = spawnerObj.AddComponent<SpawnerEntity>();
+        spawnerScript.recordedSkill = skillWord;
+        spawnerScript.unitType = UnitType.Stationary;
+        spawnerScript.hp = 20; // 少し丈夫に
+        spawnerScript.damage = 0;
+
+        if (GridManager.Instance != null)
+        {
+            int slot = GridManager.Instance.GetFrontlineSlot();
+            GridManager.Instance.PlaceUnit(spawnerScript, slot);
+            Debug.Log($"Spawner for [{skillWord}] placed at slot {slot}");
+        }
+    }
+
     void UpdateBuffTimers()
     {
         float deltaTime = Time.deltaTime;

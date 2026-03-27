@@ -83,6 +83,7 @@ public class SkillDatabase : MonoBehaviour
         addSkillEntry("spark", SkillSpark);
         addSkillEntry("turret", SkillTurret);
         addSkillEntry("regen", SkillRegen);
+        addSkillEntry("auto", SkillAuto);        // マクロ記録開始
 
         skillDescriptions = new Dictionary<string, string>()
         {
@@ -117,13 +118,14 @@ public class SkillDatabase : MonoBehaviour
             {"fire", "3ダメ+火傷"},
             {"spark", "次弾1.5倍"},
             {"turret", "自動攻撃"},
-            {"regen", "全体リジェネ"}
+            {"regen", "全体リジェネ"},
+            {"auto", "マクロ記録"}
         };
 
         characterSkills = new Dictionary<string, List<string>>()
         {
             {"GlassMan", new List<string>{"attack", "apple", "supply", "protect", "cure", "glass", "regen"}},
-            {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock"}},
+            {"Gentleman", new List<string>{"stop", "freeze", "change", "trick", "clock", "auto"}},
             {"CatGirl", new List<string>{"poison", "speed", "scratch", "cat"}},
             {"YellowGirl", new List<string>{"attack", "believe", "finish", "fire", "spark", "turret"}}
         };
@@ -728,4 +730,11 @@ public class SkillDatabase : MonoBehaviour
 
     void SkillTurret() { /* 通知済み */ }
     void SkillRegen() { /* 通知済み */ }
+
+    void SkillAuto()
+    {
+        var tc = FindObjectOfType<TypingController>();
+        if (tc != null) tc.isAutoPending = true;
+        Debug.Log("auto: マクロ記録待機開始...");
+    }
 }
